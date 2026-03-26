@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Runtime data
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# SSH keys — never commit
+ssh/
+
+# Docker build cache
+.dockerignore
+
+# OS
+.DS_Store
+
+# Env files
+.env
+*.env

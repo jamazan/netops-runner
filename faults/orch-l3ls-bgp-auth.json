@@ -1,0 +1,16 @@
+{
+  "id": "orch-l3ls-bgp-auth",
+  "skill": "arista-l3ls-troubleshooter",
+  "title": "[L3LS] Host reachability lost \u2014 DC1 leaf1b pod",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "Hosts behind dc1-leaf1b have lost reachability to hosts on other DC1 leaves. No specific protocol alarm \u2014 triage from scratch using L3LS orchestrator workflow.",
+  "root_cause": "EVPN-OVERLAY-PEERS password set to wrong value on dc1-leaf1b \u2014 BGP EVPN sessions to both spines dropped",
+  "fix_command": "router bgp 65101\nneighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.1",
+    "show vxlan address-table",
+    "show run section router bgp"
+  ]
+}

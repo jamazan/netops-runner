@@ -1,0 +1,16 @@
+{
+  "id": "wf-backbone-ospf-cost",
+  "skill": "juniper-ospf-troubleshooter",
+  "title": "Suboptimal MPLS Path \u2014 pe1 eth1 OSPF cost inflated",
+  "device": "pe1",
+  "mgmt_ip": "100.68.0.121",
+  "symptom": "DC1 to campus1 traffic taking suboptimal path. pe1 should route via p1 (eth1) as primary but traffic is going via eth2 instead.",
+  "root_cause": "OSPF metric set to 1000 on pe1 eth1 (toward p1) \u2014 pe1 prefers eth2 path causing asymmetric routing",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth1 metric",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ospf interface detail",
+    "show route 10.255.0.1",
+    "show mpls lsp"
+  ]
+}

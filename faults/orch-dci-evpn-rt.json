@@ -1,0 +1,16 @@
+{
+  "id": "orch-dci-evpn-rt",
+  "skill": "multivendor-dc-interconnect-troubleshooter",
+  "title": "[DCI] Cross-DC reachability lost \u2014 DC1 to DC2",
+  "device": "dc2-leaf1a",
+  "mgmt_ip": "100.68.0.23",
+  "symptom": "Hosts in DC1 TENANT-A VRF cannot reach hosts in DC2 TENANT-A VRF. Intra-DC reachability is healthy on both sides. Triage using multivendor DC interconnect orchestrator.",
+  "root_cause": "TENANT-A-RT community wrong on dc2-leaf1a \u2014 TENANT-A EVPN routes not imported, breaking cross-DC Type-5 stitching",
+  "fix_command": "set policy-options community TENANT-A-RT members target:65201:10",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn summary",
+    "show route table bgp.evpn.0",
+    "show policy TENANT-A-IMPORT"
+  ]
+}

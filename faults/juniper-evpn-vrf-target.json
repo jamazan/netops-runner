@@ -1,0 +1,16 @@
+{
+  "id": "juniper-evpn-vrf-target",
+  "skill": "juniper-evpn-troubleshooter",
+  "title": "EVPN RT Community Mismatch — dc2-leaf1a TENANT-A stops importing routes",
+  "device": "dc2-leaf1a",
+  "mgmt_ip": "100.68.0.23",
+  "symptom": "EVPN BGP sessions on dc2-leaf1a remain Established but TENANT-A routes are no longer imported. Hosts behind dc2-leaf1a lose reachability to other DC2 prefixes.",
+  "root_cause": "policy-options community TENANT-A-RT changed to target:65201:99999 (correct value: target:65201:10) on dc2-leaf1a",
+  "fix_command": "set policy-options community TENANT-A-RT members target:65201:10",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show route table bgp.evpn.0",
+    "show policy TENANT-A-IMPORT",
+    "show community TENANT-A-RT"
+  ]
+}

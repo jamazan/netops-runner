@@ -1,0 +1,16 @@
+{
+  "id": "wf-evpn-type2-missing",
+  "skill": "arista-evpn-troubleshooter",
+  "title": "EVPN Type-2 Route Missing \u2014 dc1-leaf1a VLAN 11 MACs not advertised",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "Host in VLAN 11 (VNI 10011) on dc1-leaf1a cannot reach hosts on dc1-leaf1b. MAC entries from dc1-leaf1a missing in EVPN table on remote leaves.",
+  "root_cause": "redistribute learned removed from router bgp 65101 vlan 11 on dc1-leaf1a \u2014 local MACs not advertised as Type-2 routes",
+  "fix_command": "router bgp 65101\nvlan 11\nredistribute learned",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show vxlan address-table",
+    "show run section router bgp"
+  ]
+}

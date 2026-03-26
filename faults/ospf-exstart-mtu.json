@@ -1,0 +1,16 @@
+{
+  "id": "ospf-exstart-mtu",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "BGP Max-Prefix Exceeded \u2014 dc1-spine1 drops session to dc1-leaf1a",
+  "device": "dc1-spine1",
+  "mgmt_ip": "100.68.0.11",
+  "symptom": "BGP EVPN session from dc1-spine1 to dc1-leaf1a (10.255.0.3) dropped with max-prefix error. Session goes to Idle.",
+  "root_cause": "neighbor 10.255.0.3 maximum-routes set to 1 on dc1-spine1 \u2014 EVPN prefix count immediately exceeds limit",
+  "fix_command": "router bgp 65100\nno neighbor 10.255.0.3 maximum-routes 1",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.3",
+    "show bgp neighbors 10.255.0.3 detail",
+    "show run section router bgp"
+  ]
+}

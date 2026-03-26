@@ -1,0 +1,16 @@
+{
+  "id": "orch-juniper-dc-evpn-rt",
+  "skill": "juniper-dc-fabric-troubleshooter",
+  "title": "[Juniper DC] DC2 TENANT-A prefix reachability lost",
+  "device": "dc2-leaf1a",
+  "mgmt_ip": "100.68.0.23",
+  "symptom": "TENANT-A hosts behind dc2-leaf1a cannot reach TENANT-A hosts on dc2-leaf2a. EVPN sessions are Established. No route installation visible. Triage using Juniper DC fabric orchestrator.",
+  "root_cause": "policy-options community TENANT-A-RT changed to target:65201:99999 on dc2-leaf1a \u2014 TENANT-A routes not imported",
+  "fix_command": "set policy-options community TENANT-A-RT members target:65201:10",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show route table bgp.evpn.0",
+    "show policy TENANT-A-IMPORT",
+    "show community TENANT-A-RT"
+  ]
+}

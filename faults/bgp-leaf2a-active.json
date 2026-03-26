@@ -1,0 +1,16 @@
+{
+  "id": "bgp-leaf2a-active",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "BGP Active/Idle \u2014 dc1-leaf2a EVPN sessions to both spines",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "dc1-leaf2a EVPN BGP sessions to dc1-spine1 and dc1-spine2 stuck in Active/Idle state.",
+  "root_cause": "EVPN-OVERLAY-PEERS password set to wrong value on dc1-leaf2a causing MD5 auth mismatch",
+  "fix_command": "router bgp 65102\nneighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.1",
+    "show bgp neighbors 10.255.0.1 detail",
+    "show run section router bgp"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "arista-evpn-rt",
+  "skill": "arista-evpn-troubleshooter",
+  "title": "EVPN RT Mismatch \u2014 dc1-leaf1b VNI 10011 wrong export",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "EVPN Type-2 routes for VLAN 11 (VNI 10011) on dc1-leaf1b not imported by dc1-leaf2a and dc1-leaf2b",
+  "root_cause": "RT export for VLAN 11 changed to wrong value Route-Target-AS:10011:99999",
+  "fix_command": "router bgp 65101 / vlan 11 / route-target export Route-Target-AS:10011:10011",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show bgp evpn instance"
+  ]
+}

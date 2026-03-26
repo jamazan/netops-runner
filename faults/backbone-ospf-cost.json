@@ -1,0 +1,16 @@
+{
+  "id": "backbone-ospf-cost",
+  "skill": "juniper-bgp-troubleshooter",
+  "title": "OSPF Cost Asymmetry \u2014 pe1 path to pe2 suboptimal",
+  "device": "pe1",
+  "mgmt_ip": "100.68.0.121",
+  "symptom": "Traffic from pe1 to pe2 loopback (10.255.1.2) taking longer path via p6 instead of direct p1/p2",
+  "root_cause": "OSPF cost set to 1000 on pe1 eth1 (toward p1), forcing all traffic via eth2 then longer path",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth1 metric",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show route 10.255.1.2",
+    "show ospf interface detail",
+    "show route table inet.3"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "arista-bgp-auth",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "BGP Auth Mismatch \u2014 dc1-leaf1b EVPN to spines",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "EVPN BGP sessions from dc1-leaf1b to dc1-spine1 and dc1-spine2 dropped to Connect",
+  "root_cause": "EVPN-OVERLAY-PEERS peer group password changed to wrong value on dc1-leaf1b",
+  "fix_command": "neighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.1",
+    "show bgp neighbors 10.255.0.1 detail"
+  ]
+}

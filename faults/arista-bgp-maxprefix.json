@@ -1,0 +1,15 @@
+{
+  "id": "arista-bgp-maxprefix",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "BGP Max-Prefix \u2014 dc1-spine1 toward dc1-leaf2a",
+  "device": "dc1-spine1",
+  "mgmt_ip": "100.68.0.11",
+  "symptom": "dc1-spine1 EVPN session to dc1-leaf2a (10.255.0.5) logging max-prefix warning, routes not accepted",
+  "root_cause": "maximum-routes 1 warning-only set on neighbor 10.255.0.5",
+  "fix_command": "no neighbor 10.255.0.5 maximum-routes",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.5",
+    "show bgp neighbors 10.255.0.5 | grep -i maximum"
+  ]
+}

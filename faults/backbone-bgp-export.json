@@ -1,0 +1,16 @@
+{
+  "id": "backbone-bgp-export",
+  "skill": "juniper-bgp-troubleshooter",
+  "title": "BGP L3VPN Export Missing \u2014 pe1 not sending VPN routes to rr1",
+  "device": "pe1",
+  "mgmt_ip": "100.68.0.121",
+  "symptom": "pe2 cannot see CUSTOMER1 VPN routes from pe1 \u2014 bgp.l3vpn.0 on pe2 shows no routes from pe1",
+  "root_cause": "EXPORT-TO-RR policy removed from pe1 ibgp-rr group \u2014 JunOS requires explicit export",
+  "fix_command": "set protocols bgp group ibgp-rr export EXPORT-TO-RR",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show route table bgp.l3vpn.0",
+    "show bgp neighbor 10.255.2.1",
+    "show route advertising-protocol bgp 10.255.2.1"
+  ]
+}

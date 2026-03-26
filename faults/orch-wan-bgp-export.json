@@ -1,0 +1,16 @@
+{
+  "id": "orch-wan-bgp-export",
+  "skill": "multivendor-wan-troubleshooter",
+  "title": "[WAN] VPN routes not reaching rr1 from pe1",
+  "device": "pe1",
+  "mgmt_ip": "100.68.0.121",
+  "symptom": "Customer VPN routes originating from DC1 are not visible on pe2 or rr1. BGP sessions appear up across the backbone. Triage using multivendor WAN orchestrator.",
+  "root_cause": "export policy removed from protocols bgp group ibgp-rr on pe1 \u2014 VPN routes not advertised to rr1",
+  "fix_command": "set protocols bgp group ibgp-rr export EXPORT-TO-RR",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show bgp group ibgp-rr",
+    "show route advertising-protocol bgp 10.255.2.1",
+    "show policy EXPORT-TO-RR"
+  ]
+}

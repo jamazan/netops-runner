@@ -1,0 +1,15 @@
+{
+  "id": "wf-bgp-leaf2-flap",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "BGP Session Flap \u2014 dc1-leaf2a and dc1-leaf2b EVPN to spines",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "BGP alarms on dc1-leaf2a (100.68.0.15) and dc1-leaf2b (100.68.0.16). EVPN sessions to both spines dropped to Connect state.",
+  "root_cause": "EVPN-OVERLAY-PEERS password set to WRONG_PASSWORD on both dc1-leaf2a and dc1-leaf2b",
+  "fix_command": "router bgp 65102\nneighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp neighbors 10.255.0.1",
+    "show bgp neighbors 10.255.0.1 detail"
+  ]
+}

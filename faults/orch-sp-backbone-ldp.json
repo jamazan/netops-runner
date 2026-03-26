@@ -1,0 +1,16 @@
+{
+  "id": "orch-sp-backbone-ldp",
+  "skill": "juniper-sp-backbone-troubleshooter",
+  "title": "[SP Backbone] MPLS forwarding degraded \u2014 p1 to pe1 path",
+  "device": "pe1",
+  "mgmt_ip": "100.68.0.121",
+  "symptom": "L3VPN customer traffic between DC1 and campus1 experiencing packet loss. OSPF appears healthy. BGP sessions up. LDP may be affected. Triage using SP backbone orchestrator.",
+  "root_cause": "targeted LDP session pe1 -> p1 (10.255.0.1) deleted \u2014 MPLS labels for p1 path lost, traffic forced to pe2 path",
+  "fix_command": "set protocols ldp session 10.255.0.1",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ldp session",
+    "show route table inet.3",
+    "show mpls lsp"
+  ]
+}

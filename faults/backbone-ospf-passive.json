@@ -1,0 +1,16 @@
+{
+  "id": "backbone-ospf-passive",
+  "skill": "juniper-ospf-troubleshooter",
+  "title": "OSPF Passive Interface \u2014 p5 loses adjacency with rr1",
+  "device": "p5",
+  "mgmt_ip": "100.68.0.115",
+  "symptom": "rr1 (10.255.2.1) loopback disappears from OSPF routing table on pe1 and pe2",
+  "root_cause": "p5 eth1 (toward rr1) set to passive \u2014 OSPF hellos suppressed",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth1 passive",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ospf interface eth1",
+    "show route 10.255.2.1",
+    "show ospf database router detail"
+  ]
+}

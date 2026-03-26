@@ -1,0 +1,16 @@
+{
+  "id": "orch-sp-backbone-ospf-passive",
+  "skill": "juniper-sp-backbone-troubleshooter",
+  "title": "[SP Backbone] rr1 unreachable \u2014 iBGP sessions dropping",
+  "device": "p5",
+  "mgmt_ip": "100.68.0.115",
+  "symptom": "PE nodes losing iBGP sessions to rr1 (100.68.0.101). L3VPN customer routes disappearing. No hardware alarms. Triage using SP backbone orchestrator.",
+  "root_cause": "p5 eth1 interface (toward rr1) set to OSPF passive \u2014 OSPF adjacency drops, rr1 loopback becomes unreachable, iBGP sessions drop",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth1 passive",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ospf interface detail",
+    "show route 10.255.2.1",
+    "show bgp summary"
+  ]
+}

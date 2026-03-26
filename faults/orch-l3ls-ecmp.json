@@ -1,0 +1,15 @@
+{
+  "id": "orch-l3ls-ecmp",
+  "skill": "arista-l3ls-troubleshooter",
+  "title": "[L3LS] Asymmetric traffic \u2014 dc1-spine2 underutilized",
+  "device": "dc1-spine2",
+  "mgmt_ip": "100.68.0.12",
+  "symptom": "Monitoring shows dc1-spine2 carrying significantly less traffic than dc1-spine1. No alarms. Leaf nodes show both spines as BGP neighbors. Triage using L3LS orchestrator.",
+  "root_cause": "maximum-paths set to 1 under router bgp 65100 on dc1-spine2 \u2014 ECMP disabled, only single path installed",
+  "fix_command": "router bgp 65100\nmaximum-paths 4 ecmp 4",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show ip route bgp",
+    "show run section router bgp"
+  ]
+}

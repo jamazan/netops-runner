@@ -1,0 +1,16 @@
+{
+  "id": "wf-spine1-bgp-underlay",
+  "skill": "arista-bgp-troubleshooter",
+  "title": "Multiple BGP Sessions Down \u2014 dc1-spine1 underlay auth mismatch",
+  "device": "dc1-spine1",
+  "mgmt_ip": "100.68.0.11",
+  "symptom": "dc1-spine1 has multiple BGP underlay sessions dropping. All leaf IPv4-UNDERLAY-PEERS sessions going to Active state.",
+  "root_cause": "IPv4-UNDERLAY-PEERS password changed to WRONG on dc1-spine1 \u2014 all underlay sessions drop due to MD5 mismatch",
+  "fix_command": "router bgp 65100\nneighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show ip bgp summary",
+    "show bgp neighbors 10.255.255.1 detail",
+    "show run section router bgp"
+  ]
+}

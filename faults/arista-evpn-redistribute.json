@@ -1,0 +1,16 @@
+{
+  "id": "arista-evpn-redistribute",
+  "skill": "arista-evpn-troubleshooter",
+  "title": "EVPN Redistribute Missing \u2014 dc1-leaf1b VLAN 11 MACs not advertised",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "Local MAC addresses on dc1-leaf1b VLAN 11 not appearing as EVPN Type-2 routes on remote VTEPs",
+  "root_cause": "redistribute learned removed from MAC-VRF VLAN 11 on dc1-leaf1b",
+  "fix_command": "router bgp 65101 / vlan 11 / redistribute learned",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show vxlan address-table",
+    "show bgp evpn instance"
+  ]
+}

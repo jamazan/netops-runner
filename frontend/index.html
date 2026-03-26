@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetOps Runner</title>
+<style>
+  :root {
+    --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
+    --border:#2a2f3d;--border2:#3a4050;
+    --text:#c9d1e0;--text-dim:#6b7385;--text-bright:#e8ecf4;
+    --accent:#4fc3f7;--accent2:#29b6f6;
+    --green:#4caf50;--red:#f44336;--yellow:#ffb300;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;font-size:15px;min-height:100vh;}
+  #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .auth-box{background:var(--bg2);border:1px solid var(--border);padding:40px;width:420px;max-width:95vw;}
+  .auth-title{font-size:18px;color:var(--accent);margin-bottom:6px;}
+  .auth-sub{color:var(--text-dim);margin-bottom:28px;font-size:11px;}
+  .auth-label{color:var(--text-dim);font-size:10px;margin-bottom:5px;}
+  .auth-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;}
+  .auth-input:focus{border-color:var(--accent);}
+  .auth-btn{width:100%;background:var(--accent);color:#000;font-family:inherit;font-size:13px;font-weight:700;padding:11px;border:none;cursor:pointer;letter-spacing:1px;}
+  .auth-btn:hover{background:var(--accent2);}
+  .auth-error{color:var(--red);font-size:11px;margin-top:10px;min-height:16px;}
+  #app{display:none;}
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 20px;height:44px;}
+  .topbar-title{color:var(--accent);font-size:14px;font-weight:700;flex:1;}
+  .topbar-user{color:var(--text-dim);font-size:11px;}
+  .topbar-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:11px;padding:4px 10px;cursor:pointer;}
+  .topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .tabnav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;}
+  .tab{padding:10px 18px;cursor:pointer;font-size:11px;color:var(--text-dim);border-bottom:2px solid transparent;letter-spacing:0.5px;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab:hover:not(.active){color:var(--text);}
+  .content{padding:24px 28px;max-width:1300px;}
+  .section-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .tests-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .tests-title{font-size:14px;color:var(--text-bright);}
+  .score-badge{background:var(--bg3);border:1px solid var(--border);padding:3px 10px;font-size:11px;color:var(--accent);}
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .filter-btn{font-family:inherit;font-size:10px;padding:3px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text-dim);cursor:pointer;}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);}
+  .test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+  .test-card{background:var(--bg2);border:1px solid var(--border);padding:14px;cursor:pointer;transition:border-color 0.15s;}
+  .test-card:hover{border-color:var(--accent);}
+  .test-card.pass{border-left:3px solid var(--green);}
+  .test-card.fail{border-left:3px solid var(--red);}
+  .test-card.partial{border-left:3px solid var(--yellow);}
+  .test-card-id{font-size:10px;color:var(--text-dim);margin-bottom:5px;}
+  .test-card-name{font-size:12px;color:var(--text-bright);margin-bottom:6px;}
+  .test-card-tags{display:flex;gap:5px;flex-wrap:wrap;}
+  .tag{font-size:9px;padding:2px 6px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
+  .score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+  .score-dot.pass{background:var(--green);}
+  .score-dot.fail{background:var(--red);}
+  .score-dot.partial{background:var(--yellow);}
+  #test-detail{display:none;padding:24px 28px;}
+  #test-detail-inner{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+  #test-detail-left{}
+  #test-detail-right{position:sticky;top:0;}
+  @media(max-width:900px){#test-detail-inner{grid-template-columns:1fr;}}
+  .detail-back{background:none;border:none;color:var(--accent);font-family:inherit;font-size:12px;cursor:pointer;margin-bottom:16px;padding:0;}
+  .detail-name{font-size:16px;color:var(--text-bright);margin-bottom:6px;}
+  .detail-id{font-size:10px;color:var(--text-dim);margin-bottom:20px;}
+  .section{margin-bottom:18px;}
+  .section-header{font-size:10px;color:var(--text-dim);letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+  .prompt-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;max-height:200px;overflow-y:auto;font-size:12px;}
+  .criteria-list{display:flex;flex-direction:column;gap:6px;}
+  .criteria-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:flex-start;gap:10px;}
+  .criteria-weight{color:var(--text-dim);font-size:10px;min-width:50px;}
+  .criteria-text{color:var(--text);flex:1;font-size:12px;}
+  .run-btn{background:var(--accent);color:#000;font-family:inherit;font-size:13px;font-weight:700;padding:11px 28px;border:none;cursor:pointer;letter-spacing:1px;margin-bottom:18px;}
+  .run-btn:disabled{background:var(--border2);color:var(--text-dim);cursor:not-allowed;}
+  .run-btn:not(:disabled):hover{background:var(--accent2);}
+  .response-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;min-height:80px;max-height:500px;overflow-y:auto;font-size:12px;}
+  .score-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
+  .score-btn{font-family:inherit;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--text);}
+  .score-btn.selected.pass{background:var(--green);color:#000;border-color:var(--green);}
+  .score-btn.selected.fail{background:var(--red);color:#fff;border-color:var(--red);}
+  .score-btn.selected.partial{background:var(--yellow);color:#000;border-color:var(--yellow);}
+  .notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:12px;padding:10px;outline:none;resize:vertical;min-height:60px;}
+  .save-btn{background:var(--green);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;margin-top:10px;}
+  .status-msg{font-size:11px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+  .results-table{width:100%;border-collapse:collapse;}
+  .results-table th{background:var(--bg3);color:var(--text-dim);font-size:10px;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .results-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;}
+  .results-table tr:hover td{background:var(--bg2);}
+  .admin-section{margin-bottom:28px;}
+  .admin-section-title{font-size:12px;color:var(--accent);margin-bottom:12px;letter-spacing:1px;}
+  .input-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .inline-input{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:12px;padding:8px 10px;outline:none;}
+  .btn{font-family:inherit;font-size:11px;padding:7px 14px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+  .btn.danger{border-color:var(--red);color:var(--red);}
+  .btn.danger:hover{background:var(--red);color:#fff;}
+  .token-list{display:flex;flex-direction:column;gap:6px;}
+  .token-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .token-id{font-size:11px;color:var(--accent);flex:1;}
+  .token-label{font-size:10px;color:var(--text-dim);}
+  .unused{color:var(--green)}.used{color:var(--text-dim)}.revoked{color:var(--red);}
+  .as-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+  .as-card{background:var(--bg3);border:1px solid var(--border);padding:10px;text-align:center;}
+  .as-label{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;}
+  .as-value{font-size:20px;font-weight:700;color:var(--accent);}
+  .as-grade{font-size:12px;font-weight:700;margin-top:2px;}
+  .as-grade.PASS{color:var(--green);} .as-grade.PARTIAL{color:var(--yellow);} .as-grade.FAIL{color:var(--red);}
+  .as-criteria{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+  .as-criterion{background:var(--bg);border:1px solid var(--border);padding:6px 10px;display:flex;align-items:flex-start;gap:8px;font-size:11px;}
+  .as-criterion.met{border-left:3px solid var(--green);}
+  .as-criterion.unmet{border-left:3px solid var(--red);}
+  .as-criterion.bonus{border-left:3px solid var(--yellow);}
+  .as-check{font-size:12px;min-width:14px;}
+  .as-note{color:var(--text-dim);font-size:10px;margin-top:2px;}
+  .as-summary{font-size:11px;color:var(--text-dim);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hidden{display:none!important;}
+  .mcp-note{background:var(--bg3);border:1px solid var(--border);padding:10px 14px;font-size:11px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;}
+  .mcp-note strong{color:var(--yellow);}
+
+  .score-card {
+    background:var(--bg2); border:1px solid var(--border); padding:12px;
+    text-align:center;
+  }
+  .sc-label { font-size:9px; color:var(--text-dim); letter-spacing:1px; margin-bottom:6px; }
+  .sc-value { font-size:24px; font-weight:700; color:var(--accent); }
+  .sc-max { font-size:10px; color:var(--text-dim); }
+  .sc-grade { font-size:12px; font-weight:700; }
+  .sc-grade.PASS { color:var(--green); }
+  .sc-grade.PARTIAL { color:var(--yellow); }
+  .sc-grade.FAIL { color:var(--red); }
+  .fault-card { background:var(--bg2); border:1px solid var(--border); padding:14px; cursor:pointer; transition:border-color 0.15s; }
+  .fault-card:hover { border-color:var(--accent); }
+  .fault-card.has-score { border-left:3px solid var(--green); }
+  .fault-card-id { font-size:10px; color:var(--text-dim); margin-bottom:5px; }
+  .fault-card-name { font-size:12px; color:var(--text-bright); margin-bottom:6px; }
+  .fault-card-device { font-size:10px; color:var(--accent); }
+
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-title">◈ NETOPS RUNNER</div>
+    <div class="auth-sub">LLM Network Engineering Test Platform</div>
+    <div class="auth-label">INVITE TOKEN</div>
+    <input class="auth-input" id="token-input" type="text" placeholder="NETOPS-XXXX-XXXX" autocomplete="off"/>
+    <div class="auth-label">DISPLAY NAME <span style="color:var(--text-dim)">(new users only)</span></div>
+    <input class="auth-input" id="name-input" type="text" placeholder="Your name"/>
+    <button class="auth-btn" onclick="doAuth()">ENTER</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">◈ NETOPS RUNNER</div>
+    <span class="topbar-user" id="topbar-user"></span>
+    <button class="topbar-btn" onclick="doLogout()">LOGOUT</button>
+  </div>
+  <div class="tabnav">
+    
+    <div class="tab" onclick="showTab('skills')" id="tab-skills">SKILL TESTS</div>
+    <div class="tab active" onclick="showTab('live')" id="tab-live">⚡ LAB TESTS</div>
+    <div class="tab" onclick="showTab('results')" id="tab-results">MY RESULTS</div>
+    <div class="tab hidden" onclick="showTab('admin')" id="tab-admin">ADMIN</div>
+  </div>
+
+  <!-- Skill Tests -->
+  <div id="tab-content-skills" class="content hidden">
+    <div class="tests-header">
+      <div class="tests-title">Skill-Based Tests</div>
+      <div class="score-badge" id="score-summary-skills">Loading...</div>
+    </div>
+    <div class="mcp-note">Tests LLM knowledge derived from your <strong>skills-exp</strong> troubleshooting skills — vendor-specific commands, behaviors, and pitfalls.</div>
+    <div class="filter-row" id="filter-row-skills"></div>
+    <div class="test-grid" id="test-grid-skills"></div>
+  </div>
+
+
+  <!-- Live Lab Tests Tab -->
+  <div id="tab-content-live" class="content hidden">
+    <div class="tests-header">
+      <div class="tests-title">Lab Tests</div>
+      <div class="score-badge" id="live-score-badge">— tests</div>
+    </div>
+    <div class="mcp-note"><strong>⚡ Real fault injection:</strong> Each test injects a real fault into your ContainerLab topology, then asks Claude to diagnose using live device state via MCP tools. Auto-scored on root cause (40pts), tool sequence (30pts), fix proposal (20pts), and efficiency (10pts).</div>
+
+    <!-- Fault Cards -->
+    <div id="fault-grid" class="test-grid"></div>
+
+    <!-- Run Panel -->
+    <div id="live-run-panel" style="display:none; margin-top:20px">
+      <button class="detail-back" onclick="closeLivePanel()">← Back to faults</button>
+      <div class="detail-name" id="live-fault-title"></div>
+      <div class="detail-id" id="live-fault-meta"></div>
+
+      <div class="section">
+        <div class="section-header">▸ FAULT DETAILS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="mcp-note" style="margin:0"><strong>Device:</strong> <span id="live-device"></span><br><strong>Symptom:</strong> <span id="live-symptom"></span></div>
+          <div class="mcp-note" style="margin:0"><strong>Skill:</strong> <span id="live-skill"></span><br><strong>Optimal tools:</strong> <span id="live-optimal"></span></div>
+        </div>
+      </div>
+
+      <!-- Phase 1: Inject -->
+      <div class="section" id="phase-inject">
+        <div class="section-header">▸ PHASE 1 — INJECT FAULT</div>
+        <button class="run-btn" id="inject-btn" onclick="injectFault()">⚡ INJECT FAULT INTO LAB</button>
+        <div class="status-msg" id="inject-status"></div>
+      </div>
+
+      <!-- Phase 2: Run LLM -->
+      <div class="section hidden" id="phase-run">
+        <div class="section-header">▸ PHASE 2 — RUN LLM DIAGNOSIS</div>
+        <div style="color:var(--green);font-size:11px;margin-bottom:12px">✓ Fault injected. Lab is broken. LLM will now diagnose using live MCP tools.</div>
+        <button class="run-btn" id="run-llm-btn" onclick="runLLM()">▶ RUN CLAUDE DIAGNOSIS</button>
+        <div class="status-msg" id="run-status"></div>
+      </div>
+
+      <!-- Phase 3: Results -->
+      <div class="section hidden" id="phase-results">
+        <div class="section-header">▸ PHASE 3 — RESULTS & SCORING</div>
+
+        <!-- Score Dashboard -->
+        <div id="score-dashboard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+          <div class="score-card" id="sc-total">
+            <div class="sc-label">TOTAL</div>
+            <div class="sc-value" id="sc-total-val">—</div>
+            <div class="sc-grade" id="sc-grade">—</div>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">ROOT CAUSE</div>
+            <div class="sc-value" id="sc-rc">—</div>
+            <div class="sc-max">/ 40</div>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">TOOL SEQUENCE</div>
+            <div class="sc-value" id="sc-ts">—</div>
+            <div class="sc-max">/ 30</div>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">FIX PROPOSED</div>
+            <div class="sc-value" id="sc-fp">—</div>
+            <div class="sc-max">/ 20</div>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">EFFICIENCY</div>
+            <div class="sc-value" id="sc-eff">—</div>
+            <div class="sc-max">/ 10</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">▸ LLM RESPONSE</div>
+          <div class="response-box" id="live-response-box"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">▸ EXPECTED ANSWER</div>
+          <div class="mcp-note" id="expected-answer"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="run-btn" onclick="runLLM()" style="font-size:11px;padding:8px 18px">▶ RE-RUN</button>
+          <button class="save-btn" onclick="restoreLab()">🔄 RESTORE LAB</button>
+        </div>
+        <div class="status-msg" id="restore-status"></div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="live-history" style="margin-top:28px">
+      <div class="section-label">RECENT RUNS</div>
+      <table class="results-table">
+        <thead><tr><th>FAULT</th><th>SCORE</th><th>GRADE</th><th>DURATION</th><th>DATE</th></tr></thead>
+        <tbody id="live-history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- Test Detail (shared for knowledge/mcp/skills) -->
+  <div id="test-detail">
+    <button class="detail-back" onclick="backToTests()">← Back</button>
+    <div class="detail-name" id="detail-name"></div>
+    <div class="detail-id" id="detail-id"></div>
+    <div id="run-error-msg" style="display:none;color:var(--red);background:var(--bg2);border:1px solid var(--red);padding:10px 14px;font-size:12px;margin-bottom:14px"></div>
+    <div id="test-detail-inner">
+      <!-- LEFT: test info -->
+      <div id="test-detail-left">
+        <div class="section">
+          <div class="section-header">▸ SYSTEM PROMPT</div>
+          <div class="prompt-box" id="detail-system"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">▸ USER PROMPT</div>
+          <div class="prompt-box" id="detail-user"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">▸ PASS CRITERIA</div>
+          <div class="criteria-list" id="detail-criteria"></div>
+        </div>
+        <button class="run-btn" id="run-btn" onclick="runTest()">▶ RUN TEST</button>
+      </div>
+      <!-- RIGHT: response + scoring -->
+      <div id="test-detail-right">
+        <div class="section" id="response-section" style="display:none">
+          <div class="section-header">▸ LLM RESPONSE</div>
+          <div class="response-box" id="response-box" style="max-height:400px"></div>
+        </div>
+        <div class="section" id="score-section" style="display:none">
+          <div class="section-header">▸ AUTO-SCORE</div>
+          <div id="as-loading" style="font-size:11px;color:var(--text-dim)"><span class="spinner"></span> Scoring with Claude Haiku...</div>
+          <div id="as-result" style="display:none">
+            <div class="as-dashboard">
+              <div class="as-card"><div class="as-label">GRADE</div><div class="as-grade" id="as-grade-val">—</div></div>
+              <div class="as-card"><div class="as-label">REQUIRED MET</div><div class="as-value" id="as-req-val">—</div></div>
+              <div class="as-card"><div class="as-label">BONUS MET</div><div class="as-value" id="as-bonus-val">—</div></div>
+              <div class="as-card"><div class="as-label">CONFIDENCE</div><div class="as-value" style="font-size:13px" id="as-conf-val">—</div></div>
+            </div>
+            <div class="as-summary" id="as-summary-text"></div>
+            <div class="as-criteria" id="as-criteria-list"></div>
+          </div>
+          <div class="section-header" style="margin-top:12px">▸ OVERRIDE SCORE</div>
+          <div class="score-row">
+            <button class="score-btn" id="btn-pass" onclick="setScore('pass')">✓ PASS</button>
+            <button class="score-btn" id="btn-partial" onclick="setScore('partial')">~ PARTIAL</button>
+            <button class="score-btn" id="btn-fail" onclick="setScore('fail')">✗ FAIL</button>
+          </div>
+          <textarea class="notes-input" id="notes-input" placeholder="Notes (optional override reason)..."></textarea><br/>
+          <button class="save-btn" onclick="saveResult()">SAVE RESULT</button>
+          <div class="status-msg" id="status-msg"></div>
+        </div>
+        <div id="right-placeholder" style="color:var(--text-dim);font-size:11px;padding:20px 0;display:block">
+          ◈ Run the test to see the LLM response here
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Tab -->
+  <div id="tab-content-results" class="content hidden">
+    <h3 style="color:var(--text-bright);margin-bottom:16px;font-size:14px">My Results</h3>
+    <table class="results-table">
+      <thead><tr><th>TEST</th><th>SCORE</th><th>NOTES</th><th>DATE</th></tr></thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Admin Tab -->
+  <div id="tab-content-admin" class="content hidden">
+    <div class="admin-section">
+      <div class="admin-section-title">CREATE INVITE TOKENS</div>
+      <div class="input-row">
+        <input class="inline-input" id="token-label" placeholder="Label" style="width:200px"/>
+        <input class="inline-input" id="token-count" type="number" value="1" min="1" max="20" style="width:60px"/>
+        <button class="btn primary" onclick="createTokens()">CREATE</button>
+      </div>
+      <div id="new-tokens-out" style="color:var(--green);font-size:11px;margin-bottom:10px"></div>
+      <div class="token-list" id="token-list">Loading...</div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">USERS</div>
+      <table class="results-table">
+        <thead><tr><th>NAME</th><th>ADMIN</th><th>RESULTS</th><th>LAST ACTIVE</th><th></th></tr></thead>
+        <tbody id="users-body"></tbody>
+      </table>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">SERVER</div>
+      <div style="color:var(--text-dim);font-size:11px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
+      <button class="btn" onclick="exportData()">EXPORT DB</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div id="admin-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:1000">
+  <div style="background:var(--bg2);border:1px solid var(--border);padding:32px;width:360px">
+    <div style="font-size:14px;color:var(--accent);margin-bottom:6px">ADMIN PASSWORD</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:18px">Enter admin password to continue</div>
+    <input id="admin-pw-input" type="password" class="auth-input" placeholder="Password" onkeydown="if(event.key==='Enter')submitAdminPw()"/>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="auth-btn" onclick="submitAdminPw()" style="flex:1">UNLOCK</button>
+      <button class="btn" onclick="document.getElementById('admin-pw-modal').style.display='none'" style="padding:11px 16px">✕</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/api';
+let state={
+  sessionId:localStorage.getItem('netops_sid')||'',user:null,
+  currentTest:null,currentTestSet:'skills',currentScore:null,currentResponse:null,
+  results:{},activeFilters:{skills:''}
+};
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(ts){return new Date(ts).toLocaleDateString()+' '+new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function headers(){return{'Content-Type':'application/json','X-Session-Id':state.sessionId};}
+async function doAuth(){console.log("doAuth called");
+  const token=document.getElementById('token-input').value.trim();
+  const name=document.getElementById('name-input').value.trim();
+  document.getElementById('auth-error').textContent='';
+  if(!token){document.getElementById('auth-error').textContent='Enter your invite token';return;}
+  try{
+    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/auth/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:token,display_name:name})});
+    const d=await r.json();
+    if(!r.ok){document.getElementById('auth-error').textContent=d.error||'Auth failed';return;}
+    state.sessionId=d.session_id;state.user=d.user;
+    localStorage.setItem('netops_sid',d.session_id);showApp();
+  }catch(e){document.getElementById('auth-error').textContent='Error: '+e.message;}
+}
+document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
+document.getElementById('name-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
+async function doLogout(){
+  try{await fetch(`${API}/auth/logout`,{method:'POST',headers:headers()});}catch{}
+  localStorage.removeItem('netops_sid');location.reload();
+}
+async function init(){
+  if(!state.sessionId)return;
+  try{
+    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/me`,{headers:headers()});
+    if(!r.ok){localStorage.removeItem('netops_sid');return;}
+    state.user=await r.json();showApp();
+  }catch{}
+}
+function showApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('topbar-user').textContent=state.user.display_name;
+  if(state.user.is_admin)document.getElementById('tab-admin').classList.remove('hidden');
+  document.getElementById('tab-live').classList.add('active');
+  document.getElementById('tab-content-live').classList.remove('hidden');
+  loadResults().then(()=>{renderTestGrid('skills');loadFaults();});
+  if(state.user.is_admin)loadAdminData();
+}
+async function loadResults(){
+  try{
+    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/results`,{headers:headers()});
+    const rows=await r.json();state.results={};
+    rows.forEach(row=>{state.results[row.test_id]=row;});
+  }catch{}
+}
+function getAllTags(tests){const t=new Set();tests.forEach(x=>x.tags.forEach(g=>t.add(g)));return[...t].sort();}
+function renderTestGrid(set){
+  const tests=SKILL_TESTS;
+  const grid=document.getElementById('test-grid-'+set);
+  const filterRow=document.getElementById('filter-row-'+set);
+  const active=state.activeFilters[set];
+  filterRow.innerHTML=`<button class="filter-btn ${!active?'active':''}" onclick="setFilter('${set}','')">ALL</button>`+
+    getAllTags(tests).map(t=>`<button class="filter-btn ${active===t?'active':''}" onclick="setFilter('${set}','${t}')">${t}</button>`).join('');
+  const filtered=active?tests.filter(t=>t.tags.includes(active)):tests;
+  let pass=0,fail=0,partial=0;
+  grid.innerHTML=filtered.map(t=>{
+    const res=state.results[t.id];const cls=res?res.score:'';
+    if(res?.score==='pass')pass++;else if(res?.score==='fail')fail++;else if(res?.score==='partial')partial++;
+    return`<div class="test-card ${cls}" onclick="showTest('${t.id}','${set}')">
+      <div class="test-card-id">${t.id}</div>
+      <div class="test-card-name">${res?`<span class="score-dot ${res.score}"></span>`:''}${escHtml(t.name)}</div>
+      <div class="test-card-tags">${t.tags.map(g=>`<span class="tag">${g}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+  const done=pass+fail+partial;
+  document.getElementById('score-summary-'+set).textContent=`${done}/${filtered.length} done — ${pass}✓ ${partial}~ ${fail}✗`;
+}
+function setFilter(set,tag){state.activeFilters[set]=tag;renderTestGrid(set);}
+function showTest(id,set){
+  const tests=SKILL_TESTS;
+  state.currentTest=tests.find(t=>t.id===id);state.currentTestSet=set;
+  state.currentScore=null;state.currentResponse=null;state.currentAutoScore=null;
+  const t=state.currentTest;const res=state.results[id];
+  document.getElementById('tab-content-'+set).classList.add('hidden');
+  document.getElementById('test-detail').style.display='block';
+  document.getElementById('detail-name').textContent=t.name;
+  document.getElementById('detail-id').textContent=t.id+' · '+t.tags.join(', ');
+  document.getElementById('detail-system').textContent=t.system;
+  document.getElementById('detail-user').textContent=t.user;
+  document.getElementById('detail-criteria').innerHTML=t.criteria.map(c=>
+    `<div class="criteria-item"><span class="criteria-weight">${c.weight}</span><span class="criteria-text">${escHtml(c.text)}</span></div>`).join('');
+  document.getElementById('run-btn').disabled=false;document.getElementById('run-btn').textContent='▶ RUN TEST';
+  document.getElementById('right-placeholder').style.display='block';
+  document.getElementById('run-error-msg').style.display='none';
+  if(res?.llm_response){
+    state.currentResponse=res.llm_response;
+    document.getElementById('response-box').textContent=res.llm_response;
+    document.getElementById('response-section').style.display='block';
+    document.getElementById('score-section').style.display='block';
+    document.getElementById('as-loading').style.display='none';
+    if(res.auto_score){
+      state.currentAutoScore=res.auto_score;
+      renderAutoScore(res.auto_score, state.currentTest.criteria);
+    }
+    setScore(res.score,false);document.getElementById('notes-input').value=res.notes||'';
+    document.getElementById('status-msg').textContent='Previous result loaded';
+  }else{
+    document.getElementById('response-section').style.display='none';
+    document.getElementById('score-section').style.display='none';
+    document.getElementById('status-msg').textContent='';
+  }
+}
+function backToTests(){
+  document.getElementById('test-detail').style.display='none';
+  document.getElementById('tab-content-'+state.currentTestSet).classList.remove('hidden');
+}
+async function runTest(){
+  const t=state.currentTest;const btn=document.getElementById('run-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Running...';
+  document.getElementById('run-error-msg').style.display='none';
+  document.getElementById('response-section').style.display='none';document.getElementById('score-section').style.display='none';
+  try{
+    const r=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1024,system:t.system,messages:[{role:'user',content:t.user}]})});
+    const data=await r.json();
+    if(!r.ok || data.type==='error'){
+      const msg = data?.error?.message || data?.error || `HTTP ${r.status}`;
+      throw new Error(msg);
+    }
+    const text=data.content?.[0]?.text||JSON.stringify(data);
+    state.currentResponse=text;
+    document.getElementById('response-box').textContent=text;
+    document.getElementById('response-section').style.display='block';
+    document.getElementById('score-section').style.display='block';
+    document.getElementById('as-loading').style.display='block';
+    document.getElementById('as-result').style.display='none';
+    document.getElementById('right-placeholder').style.display='none';
+    btn.textContent='▶ RE-RUN TEST';btn.disabled=false;
+    autoScoreTest(text, state.currentTest.criteria);
+  }catch(e){
+    const errDiv=document.getElementById('run-error-msg');
+    const msg = typeof e === 'string' ? e
+      : e?.error?.message || e?.message || e?.error || JSON.stringify(e);
+    errDiv.textContent='Error: '+msg;
+    errDiv.style.display='block';
+    btn.textContent='▶ RUN TEST';btn.disabled=false;
+  }
+}
+async function autoScoreTest(llmResponse, criteria) {
+  try {
+    const r = await fetch(`${API}/score-response`, {
+      method:'POST', headers:headers(),
+      body:JSON.stringify({llm_response:llmResponse, criteria})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    state.currentAutoScore = d.auto_score;
+    renderAutoScore(d.auto_score, criteria);
+    // Pre-select the grade from auto-score
+    const gradeMap = {PASS:'pass', PARTIAL:'partial', FAIL:'fail'};
+    const mapped = gradeMap[d.auto_score.score] || 'fail';
+    setScore(mapped);
+  } catch(e) {
+    const msg = e?.error?.message || e?.message || String(e);
+    document.getElementById('as-loading').textContent = 'Auto-score failed: ' + msg;
+  }
+}
+function renderAutoScore(as, criteria) {
+  document.getElementById('as-loading').style.display = 'none';
+  document.getElementById('as-result').style.display = 'block';
+  const gradeEl = document.getElementById('as-grade-val');
+  gradeEl.textContent = as.score || '—';
+  gradeEl.className = `as-grade ${as.score || ''}`;
+  document.getElementById('as-req-val').textContent = `${as.required_met ?? '—'}/${as.required_total ?? '—'}`;
+  document.getElementById('as-bonus-val').textContent = as.bonus_met ?? '—';
+  document.getElementById('as-conf-val').textContent = as.confidence || '—';
+  document.getElementById('as-summary-text').textContent = as.summary || '';
+  const list = document.getElementById('as-criteria-list');
+  list.innerHTML = (as.criteria_results || []).map(cr => {
+    const c = criteria[cr.index - 1] || {};
+    const cls = cr.met ? 'met' : c.weight === 'bonus' ? 'bonus' : 'unmet';
+    return `<div class="as-criterion ${cls}">
+      <span class="as-check">${cr.met ? '✓' : '✗'}</span>
+      <div><div>[${(c.weight||'').toUpperCase()}] ${escHtml(c.text||'')}</div><div class="as-note">${escHtml(cr.note||'')}</div></div>
+    </div>`;
+  }).join('');
+}
+function setScore(score,updateUI=true){
+  state.currentScore=score;
+  if(!updateUI)return;
+  ['pass','partial','fail'].forEach(s=>{const b=document.getElementById('btn-'+s);b.className='score-btn';if(s===score)b.classList.add('selected',s);});
+}
+async function saveResult(){
+  if(!state.currentScore){document.getElementById('status-msg').textContent='Select a score first';return;}
+  try{
+    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/results`,{method:'POST',headers:headers(),body:JSON.stringify({
+      test_id:state.currentTest.id,score:state.currentScore,
+      notes:document.getElementById('notes-input').value.trim(),
+      criteria:state.currentTest.criteria,llm_response:state.currentResponse
+    })});
+    if(!r.ok)throw new Error((await r.json()).error);
+    state.results[state.currentTest.id]={test_id:state.currentTest.id,score:state.currentScore,llm_response:state.currentResponse};
+    document.getElementById('status-msg').textContent='✓ Saved';
+    renderTestGrid('skills');
+  }catch(e){document.getElementById('status-msg').textContent='Error: '+e.message;}
+}
+function showTab(tab){
+  ['skills','live','results','admin'].forEach(t=>{
+    document.getElementById('tab-content-'+t)?.classList.add('hidden');
+    document.getElementById('tab-'+t)?.classList.remove('active');
+  });
+  document.getElementById('test-detail').style.display='none';
+  document.getElementById('tab-content-'+tab)?.classList.remove('hidden');
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  if(tab==='live'){loadFaults();loadLiveHistory();}
+  if(tab==='skills')loadResults().then(()=>renderTestGrid('skills'));
+  if(tab==='results')loadResultsTab();
+  if(tab==='admin')loadAdminData();
+}
+async function loadResultsTab(){
+  await loadResults();
+  const tbody=document.getElementById('results-body');
+  const sorted=Object.values(state.results).sort((a,b)=>b.saved_at-a.saved_at);
+  if(!sorted.length){tbody.innerHTML='<tr><td colspan="4" style="color:var(--text-dim)">No results yet</td></tr>';return;}
+  tbody.innerHTML=sorted.map(r=>`<tr>
+    <td>${escHtml(r.test_id)}</td>
+    <td><span class="score-dot ${r.score}"></span>${r.score}</td>
+    <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">${escHtml(r.notes||'—')}</td>
+    <td>${r.saved_at?fmtDate(r.saved_at):'—'}</td>
+  </tr>`).join('');
+}
+async function loadAdminData(){
+  ensureAdminPw(async function(pw){
+    try{
+      const tr=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1,messages:[{role:'user',content:'hi'}]})});
+      document.getElementById('apikey-status').textContent=tr.status===503?'✗ Not set':'✓ Configured';
+      document.getElementById('apikey-status').style.color=tr.status===503?'var(--red)':'var(--green)';
+    }catch{}
+    try{
+      const r=await fetch(`${API}/admin/tokens`,{headers:{...headers(),'X-Admin-Password':pw}});
+      if(r.status===403){clearAdminPw();document.getElementById('token-list').textContent='Wrong password';return;}
+      const tokens=await r.json();
+      document.getElementById('token-list').innerHTML=tokens.map(t=>`<div class="token-item">
+        <span class="token-id">${escHtml(t.id)}</span><span class="token-label">${escHtml(t.label)}</span>
+        <span class="token-status ${t.revoked?'revoked':t.used_by?'used':'unused'}">${t.revoked?'REVOKED':t.used_by?'USED':'AVAILABLE'}</span>
+        ${!t.revoked?`<button class="btn danger" onclick="revokeToken('${t.id}')">REVOKE</button>`:''}
+      </div>`).join('');
+    }catch(e){document.getElementById('token-list').textContent='Error: '+e.message;}
+    try{
+      const r=await fetch(`${API}/admin/users`,{headers:{...headers(),'X-Admin-Password':pw}});
+      const users=await r.json();
+      document.getElementById('users-body').innerHTML=users.map(u=>`<tr>
+        <td>${escHtml(u.display_name)}</td><td>${u.is_admin?'✓':'—'}</td><td>${u.result_count}</td>
+        <td>${u.last_active?fmtDate(u.last_active):'Never'}</td>
+        <td><button class="btn danger" onclick="deleteUser('${u.id}','${escHtml(u.display_name)}')">DELETE</button></td>
+      </tr>`).join('');
+    }catch{}
+  });
+}
+function getAdminPw(){return localStorage.getItem('netops_adminpw')||'';}
+function ensureAdminPw(cb){
+  const pw=localStorage.getItem('netops_adminpw');
+  if(pw){cb(pw);return;}
+  document.getElementById('admin-pw-modal').style.display='flex';
+  document.getElementById('admin-pw-input').value='';
+  document.getElementById('admin-pw-input').focus();
+  window._adminPwCb=cb;
+}
+function submitAdminPw(){
+  const pw=document.getElementById('admin-pw-input').value.trim();
+  if(!pw)return;
+  localStorage.setItem('netops_adminpw',pw);
+  document.getElementById('admin-pw-modal').style.display='none';
+  if(window._adminPwCb){window._adminPwCb(pw);window._adminPwCb=null;}
+}
+function clearAdminPw(){localStorage.removeItem('netops_adminpw');}
+async function createTokens(){
+  const label=document.getElementById('token-label').value.trim();const count=parseInt(document.getElementById('token-count').value)||1;
+  if(!label){alert('Enter label');return;}
+  const pw=getAdminPw();if(!pw){loadAdminData();return;}
+  const r=await fetch(`${API}/admin/tokens`,{method:'POST',headers:{...headers(),'X-Admin-Password':pw},body:JSON.stringify({label,count})});
+  const d=await r.json();if(!r.ok){alert(d.error);return;}
+  document.getElementById('new-tokens-out').textContent='Created: '+d.created.join(', ');loadAdminData();
+}
+async function revokeToken(id){if(!confirm('Revoke '+id+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/tokens/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
+async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/users/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
+function exportData(){window.open(`${API}/admin/export`,'_blank');}
+init();
+
+const SKILL_TESTS = [
+
+  // ═══════════════════════════════════════════
+  // ARISTA EOS
+  // ═══════════════════════════════════════════
+
+  {id:'AR-BGP-01', name:'Arista BGP Session States & Diagnosis',
+   tags:['arista','bgp'],
+   system:'You are a network engineer specializing in Arista EOS. Answer concisely using EOS-specific commands and behavior.',
+   user:'On an Arista EOS device, a BGP peer is stuck in the Active state. Walk through your diagnosis steps using EOS-specific commands. What EOS-specific pitfalls could cause this?',
+   criteria:[
+     {weight:'required', text:'Uses show bgp summary and show bgp neighbors <IP> to diagnose'},
+     {weight:'required', text:'Identifies MD5 auth mismatch as a cause of Active/Idle loop on EOS'},
+     {weight:'required', text:'Mentions show bgp neighbors <IP> | json for structured output'},
+     {weight:'bonus', text:'Notes service routing protocols model multi-agent required for EVPN/SR features'},
+   ]},
+
+  {id:'AR-BGP-02', name:'Arista BGP ECMP and Path Selection',
+   tags:['arista','bgp'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'Traffic on an Arista spine is not load-balancing across two BGP paths to the same prefix. Both paths appear in show bgp. What is the most likely EOS-specific cause and fix?',
+   criteria:[
+     {weight:'required', text:'Identifies maximum-paths not configured — EOS installs only 1 path by default'},
+     {weight:'required', text:'Mentions maximum-paths under router bgp address-family'},
+     {weight:'bonus', text:'Notes update-wait-install / update-wait-convergence as convergence pitfalls in large fabrics'},
+     {weight:'bonus', text:'Mentions graceful-restart mismatch causing resets'},
+   ]},
+
+  {id:'AR-EVPN-01', name:'Arista EVPN Troubleshooting Workflow',
+   tags:['arista','evpn','vxlan'],
+   system:'You are a network engineer specializing in Arista EOS EVPN/VXLAN fabrics.',
+   user:'A MAC address is not being learned across the EVPN fabric on Arista EOS. Walk through your EVPN troubleshooting workflow using EOS-specific commands.',
+   criteria:[
+     {weight:'required', text:'Checks BGP EVPN overlay session state first'},
+     {weight:'required', text:'Verifies Type-2 route advertisement using show bgp evpn route-type mac-ip'},
+     {weight:'required', text:'Checks VXLAN data-plane with show vxlan vtep or show vxlan address-table'},
+     {weight:'bonus', text:'Mentions redistribute learned under MAC-VRF required for local MACs'},
+     {weight:'bonus', text:'Notes vxlan virtual-router encapsulation mac-address mlag-system-id for MLAG pairs'},
+   ]},
+
+  {id:'AR-EVPN-02', name:'Arista EVPN RT Import/Export',
+   tags:['arista','evpn'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'EVPN routes are being advertised from one Arista leaf but not imported on another. Both BGP sessions are Established. What do you check?',
+   criteria:[
+     {weight:'required', text:'Checks RT export value on originating leaf'},
+     {weight:'required', text:'Checks RT import policy on receiving leaf'},
+     {weight:'required', text:'Verifies RT values match between VRFs or MAC-VRFs'},
+     {weight:'bonus', text:'Explains auto-derived RT (ASN:VNI) vs manual RT'},
+   ]},
+
+  {id:'AR-VXLAN-01', name:'Arista VXLAN Data-Plane Pitfalls',
+   tags:['arista','vxlan'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'VXLAN unicast forwarding is broken between two Arista VTEPs even though BGP EVPN shows the correct routes. What EOS-specific data-plane issues should you check?',
+   criteria:[
+     {weight:'required', text:'Checks VTEP source loopback reachability in underlay'},
+     {weight:'required', text:'Verifies VNI to VLAN mapping is consistent across VTEPs'},
+     {weight:'required', text:'Checks underlay MTU is at least 1550 (VXLAN adds 50 bytes)'},
+     {weight:'bonus', text:'Notes MLAG requires shared anycast VTEP IP on common loopback'},
+     {weight:'bonus', text:'Warns against mixing static vxlan flood vtep with EVPN on same VNI'},
+   ]},
+
+  {id:'AR-OSPF-01', name:'Arista OSPF Adjacency Failures',
+   tags:['arista','ospf'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'An OSPF adjacency on Arista EOS is stuck in ExStart. What are the likely causes and how do you diagnose each?',
+   criteria:[
+     {weight:'required', text:'Identifies MTU mismatch as primary ExStart cause on EOS'},
+     {weight:'required', text:'Checks hello/dead timer mismatch'},
+     {weight:'required', text:'Verifies area type and authentication match'},
+     {weight:'bonus', text:'Mentions ip ospf area under interface can override router ospf area assignment'},
+     {weight:'bonus', text:'Notes passive interface misconfiguration blocks adjacency formation'},
+   ]},
+
+  {id:'AR-ISIS-01', name:'Arista IS-IS Troubleshooting',
+   tags:['arista','isis'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'An IS-IS adjacency on Arista EOS is cycling. Walk through diagnosis. What are EOS-specific IS-IS pitfalls?',
+   criteria:[
+     {weight:'required', text:'Checks adjacency state with show isis neighbors'},
+     {weight:'required', text:'Verifies NET address uniqueness and area address match'},
+     {weight:'required', text:'Checks level mismatch (EOS defaults interfaces to Level 1-2)'},
+     {weight:'bonus', text:'Mentions address-family ipv4/ipv6 unicast must be configured under IS-IS'},
+     {weight:'bonus', text:'Notes set-overload-bit on-startup wait-for-bgp delays clearing overload bit'},
+   ]},
+
+  {id:'AR-BFD-01', name:'Arista BFD Session Flapping',
+   tags:['arista','bfd'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'BFD sessions are flapping on an Arista EOS device, causing BGP and OSPF resets. Walk through diagnosis. What EOS-specific pitfalls apply?',
+   criteria:[
+     {weight:'required', text:'Checks BFD timer values — aggressive timers (100ms x3) may not be sustainable under load'},
+     {weight:'required', text:'Verifies BFD is bound to the correct protocol (neighbor <IP> bfd for BGP, bfd interval for OSPF)'},
+     {weight:'required', text:'Checks hardware offload for BFD on high-scale deployments'},
+     {weight:'bonus', text:'Notes BFD echo mode must be consistent on both sides'},
+     {weight:'bonus', text:'Mentions BFD on MLAG peer-link is unsupported — use MLAG peer keepalive instead'},
+   ]},
+
+  {id:'AR-COPP-01', name:'Arista Control Plane Policing',
+   tags:['arista','copp'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'BGP sessions on an Arista spine are flapping intermittently. CPU load is high. How do you determine if CoPP is involved and what do you check?',
+   criteria:[
+     {weight:'required', text:'Checks show platform trident counters cpu forwarding profile to identify CPU queue drops'},
+     {weight:'required', text:'Correlates drop timing with BGP flap events'},
+     {weight:'required', text:'Identifies which CoPP class is being exceeded'},
+     {weight:'bonus', text:'Notes default CoPP policy may be too aggressive for large-scale BGP deployments'},
+     {weight:'bonus', text:'Mentions ARP storms can overwhelm ARP CoPP class'},
+   ]},
+
+  {id:'AR-QOS-01', name:'Arista QoS Classification and Trust',
+   tags:['arista','qos'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'Latency-sensitive traffic on an Arista EOS device is not getting priority treatment. Walk through QoS diagnosis. What are EOS-specific trust and classification behaviors?',
+   criteria:[
+     {weight:'required', text:'Checks QoS policy applied to interface with show qos interface <intf>'},
+     {weight:'required', text:'Verifies DSCP classification/marking is correct'},
+     {weight:'required', text:'Notes EOS trusts CoS on trunk ports, DSCP on routed ports by default'},
+     {weight:'bonus', text:'Explains EOS applies QoS at egress by default'},
+     {weight:'bonus', text:'Notes ECMP may not be QoS-aware — latency flows may share bulk links'},
+   ]},
+
+  {id:'AR-SR-01', name:'Arista Segment Routing Configuration',
+   tags:['arista','segment-routing','mpls'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'Segment Routing is configured on Arista EOS but SR labels are not being programmed. What are the required configuration steps and common pitfalls?',
+   criteria:[
+     {weight:'required', text:'segment-routing mpls must be enabled globally and under the IGP'},
+     {weight:'required', text:'SRGB range: EOS default is 16000-23999 — must not conflict'},
+     {weight:'required', text:'Prefix-SID must be advertised under the loopback in IS-IS or OSPF'},
+     {weight:'bonus', text:'TI-LFA: fast-reroute ti-lfa must be explicitly enabled under IGP'},
+     {weight:'bonus', text:'SR coexistence with LDP: verify sr-prefer if SR should win over LDP'},
+   ]},
+
+  {id:'AR-LDP-01', name:'Arista LDP Troubleshooting',
+   tags:['arista','ldp','mpls'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'LDP session between two Arista EOS nodes will not establish. Walk through diagnosis steps and EOS-specific requirements.',
+   criteria:[
+     {weight:'required', text:'Verifies mpls ip is enabled globally on EOS'},
+     {weight:'required', text:'Checks mpls ldp interface <intf> configured on required interfaces'},
+     {weight:'required', text:'Verifies transport address matches IGP router-id loopback'},
+     {weight:'bonus', text:'Confirms LDP router-id is reachable via IGP on both sides'},
+   ]},
+
+  {id:'AR-L1-01', name:'Arista Layer 1 Interface Diagnosis',
+   tags:['arista','layer1'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'An Arista EOS interface is up/up but showing CRC errors. Walk through Layer 1 diagnosis using EOS-specific commands and DOM data.',
+   criteria:[
+     {weight:'required', text:'Checks show interfaces <intf> counters errors for CRC, input errors, FCS'},
+     {weight:'required', text:'Checks optical DOM with show interfaces <intf> transceiver detail for Rx/Tx power'},
+     {weight:'required', text:'Determines if errors are directional (Rx vs Tx) to identify faulty end'},
+     {weight:'bonus', text:'Notes err-disabled state detection with show interfaces status err-disabled'},
+   ]},
+
+  {id:'AR-HW-01', name:'Arista Hardware and TCAM Troubleshooting',
+   tags:['arista','hardware'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'Routes are being silently dropped on an Arista EOS device. No software errors visible. What hardware-level issues should you investigate?',
+   criteria:[
+     {weight:'required', text:'Checks TCAM utilization with show platform trident tcam or show platform jericho tcam'},
+     {weight:'required', text:'Looks for >80% utilization as warning threshold'},
+     {weight:'required', text:'Identifies which TCAM resource is exhausted (routes, ACL, MAC, etc.)'},
+     {weight:'bonus', text:'Mentions hitless upgrade state failure can cause double-reload'},
+   ]},
+
+  {id:'AR-MLAG-01', name:'Arista MLAG Troubleshooting',
+   tags:['arista','mlag','campus'],
+   system:'You are a network engineer specializing in Arista EOS.',
+   user:'An Arista MLAG pair is experiencing split-brain. One peer shows MLAG inactive. Walk through diagnosis and the consequences of split-brain.',
+   criteria:[
+     {weight:'required', text:'Checks show mlag detail for peer-link state and keepalive status'},
+     {weight:'required', text:'Verifies peer-link port-channel is up on both sides'},
+     {weight:'required', text:'Explains split-brain: both peers become primary and may forward duplicate traffic'},
+     {weight:'bonus', text:'Notes MLAG peer keepalive uses management interface — separate from peer-link'},
+   ]},
+
+  {id:'AR-L3LS-01', name:'Arista L3LS Fabric Triage',
+   tags:['arista','l3ls','orchestrator'],
+   system:'You are a senior network engineer familiar with Arista L3LS EVPN/VXLAN fabrics.',
+   user:'A host in a leaf-spine L3LS fabric cannot reach a host on a different leaf. Describe the systematic triage approach — which layers do you check first and why?',
+   criteria:[
+     {weight:'required', text:'Checks spine eBGP underlay sessions first (foundation of fabric health)'},
+     {weight:'required', text:'Then checks EVPN overlay BGP session state on the affected leaf'},
+     {weight:'required', text:'Then checks VXLAN data-plane (VTEP reachability, VNI mapping, ARP suppression)'},
+     {weight:'bonus', text:'Distinguishes L2 forwarding failure (Type-2 missing) from L3 routing failure (Type-5/IRB missing)'},
+   ]},
+
+  {id:'AR-L2LS-01', name:'Arista L2LS MLAG and STP',
+   tags:['arista','l2ls','mlag'],
+   system:'You are a network engineer specializing in Arista EOS campus fabrics.',
+   user:'In an Arista L2LS campus fabric, hosts on access leaves cannot reach the distribution layer. MLAG is configured between the spine pair. What is your troubleshooting sequence?',
+   criteria:[
+     {weight:'required', text:'Checks MLAG state on spine pair first (peer-link, keepalive, MLAG domain)'},
+     {weight:'required', text:'Verifies STP is not blocking uplinks — checks root bridge placement'},
+     {weight:'required', text:'Checks port-channel state from access leaves to spine'},
+     {weight:'bonus', text:'Notes STP TCN storms flush MAC tables and can cause temporary flooding'},
+   ]},
+
+  // ═══════════════════════════════════════════
+  // JUNIPER JunOS
+  // ═══════════════════════════════════════════
+
+  {id:'JUN-BGP-01', name:'Juniper BGP Policy and Route Advertisement',
+   tags:['juniper','bgp'],
+   system:'You are a network engineer specializing in Juniper JunOS.',
+   user:'A BGP peer on Juniper JunOS is Established but not receiving any routes. Walk through diagnosis focusing on JunOS-specific policy behavior.',
+   criteria:[
+     {weight:'required', text:'Checks show bgp summary and show bgp neighbor <IP> for session and prefix counts'},
+     {weight:'required', text:'Verifies export policy is configured — JunOS does NOT export routes by default unlike EOS'},
+     {weight:'required', text:'Checks show route advertising-protocol bgp <peer> to see what is being sent'},
+     {weight:'bonus', text:'Uses show route receive-protocol bgp <peer> to verify received routes'},
+     {weight:'bonus', text:'Notes policy-options term with then accept required for BGP export in JunOS'},
+   ]},
+
+  {id:'JUN-BGP-02', name:'Juniper BGP Route Reflection and Cluster ID',
+   tags:['juniper','bgp','mpls'],
+   system:'You are a network engineer specializing in Juniper JunOS.',
+   user:'A Juniper route reflector (rr1) is not reflecting routes to all clients. Diagnose the route reflection configuration.',
+   criteria:[
+     {weight:'required', text:'Checks cluster-id is configured consistently across all RRs'},
+     {weight:'required', text:'Verifies clients are in the correct cluster (group with cluster peer config)'},
+     {weight:'required', text:'Checks no route leaking out to other IBGP peers without reflection'},
+     {weight:'bonus', text:'Notes next-hop-self must be explicit in JunOS iBGP — no automatic behavior (unlike Cisco)'},
+   ]},
+
+  {id:'JUN-EVPN-01', name:'Juniper EVPN VRF-Target and ESI',
+   tags:['juniper','evpn','vxlan'],
+   system:'You are a network engineer specializing in Juniper JunOS EVPN fabrics.',
+   user:'EVPN routes are advertised from a Juniper PE but not imported on the remote PE. What JunOS-specific configuration do you check?',
+   criteria:[
+     {weight:'required', text:'Verifies vrf-target community matches between advertising and importing PEs'},
+     {weight:'required', text:'Checks show bgp summary evpn and show evpn database for route state'},
+     {weight:'bonus', text:'Verifies IRB MAC is consistent across redundant PEs'},
+     {weight:'bonus', text:'Checks ESI is identical on both PEs for multihomed CE — DF election failure causes BUM drops'},
+   ]},
+
+  {id:'JUN-ISIS-01', name:'Juniper IS-IS Wide Metrics and Traffic Engineering',
+   tags:['juniper','isis','mpls'],
+   system:'You are a network engineer specializing in Juniper JunOS.',
+   user:'Juniper IS-IS is configured but SR-TE extensions are not working. What IS-IS configuration is required and what are JunOS-specific pitfalls?',
+   criteria:[
+     {weight:'required', text:'traffic-engineering and wide-metrics-only must be consistent across all nodes'},
+     {weight:'required', text:'family iso must be enabled on all IS-IS interfaces'},
+     {weight:'required', text:'source-packet-routing must be enabled under both protocols isis and protocols mpls for SR'},
+     {weight:'bonus', text:'Notes no-adjacency-down-notification can mask flapping adjacencies in JunOS'},
+   ]},
+
+  {id:'JUN-LDP-01', name:'Juniper LDP Requirements and Pitfalls',
+   tags:['juniper','ldp','mpls'],
+   system:'You are a network engineer specializing in Juniper JunOS.',
+   user:'LDP labels are not being distributed on a Juniper device. Walk through the JunOS-specific requirements for LDP to function.',
+   criteria:[
+     {weight:'required', text:'family mpls must be configured on all transit and loopback interfaces'},
+     {weight:'required', text:'LDP transport address (loopback 0) must be reachable via IGP'},
+     {weight:'required', text:'MTU must accommodate MPLS label stack — default 1500 may be insufficient for jumbo frames'},
+     {weight:'bonus', text:'Checks show ldp session and show ldp neighbor for session state'},
+   ]},
+
+  {id:'JUN-VXLAN-01', name:'Juniper VXLAN Tunnel Endpoint Configuration',
+   tags:['juniper','vxlan','evpn'],
+   system:'You are a network engineer specializing in Juniper JunOS/cRPD.',
+   user:'VXLAN tunnels are not forming on a Juniper QFX or cRPD device. What JunOS-specific configuration is required and what are common pitfalls?',
+   criteria:[
+     {weight:'required', text:'tunnel-endpoint must reference the correct loopback interface'},
+     {weight:'required', text:'On QFX: set vlans <n> vxlan vni <id> or routing-instance BD config required'},
+     {weight:'required', text:'Underlay MTU must be >= 1550 to accommodate VXLAN 50-byte overhead'},
+     {weight:'bonus', text:'Asymmetric vs symmetric IRB must be consistent across all VTEPs'},
+   ]},
+
+  {id:'JUN-QOS-01', name:'Juniper CoS Forwarding Classes and Schedulers',
+   tags:['juniper','qos'],
+   system:'You are a network engineer specializing in Juniper JunOS.',
+   user:'On a Juniper MX, ingress traffic is classified correctly but egress scheduling is not honoring the forwarding class. What JunOS-specific CoS behavior applies?',
+   criteria:[
+     {weight:'required', text:'JunOS applies CoS at egress — ingress classification only determines forwarding class'},
+     {weight:'required', text:'Checks scheduler-map is applied to the correct egress interface'},
+     {weight:'required', text:'Verifies BA classifier is not overriding per-packet DSCP on MX (disable if needed)'},
+     {weight:'bonus', text:'Notes hierarchical schedulers on MX require enhanced-ip chassis mode'},
+     {weight:'bonus', text:'On QFX: limited to 8 queues per port — avoid over-engineering forwarding class sets'},
+   ]},
+
+  {id:'JUN-SR-01', name:'Juniper Segment Routing and cRPD',
+   tags:['juniper','segment-routing','mpls'],
+   system:'You are a network engineer specializing in Juniper JunOS and cRPD.',
+   user:'Segment Routing is not forwarding traffic correctly on a Juniper cRPD node. What are the JunOS/cRPD-specific requirements and pitfalls?',
+   criteria:[
+     {weight:'required', text:'source-packet-routing must be enabled under both protocols isis and protocols mpls'},
+     {weight:'required', text:'On cRPD: SR label programming goes through Linux kernel MPLS — verify with ip -M route'},
+     {weight:'required', text:'SRGB must not overlap between nodes and must be consistent with peers'},
+     {weight:'bonus', text:'SR coexistence with RSVP-TE: verify prefer-srgb if SR should be preferred'},
+   ]},
+
+  {id:'JUN-DC-01', name:'Juniper DC Fabric Triage',
+   tags:['juniper','dc-fabric','orchestrator'],
+   system:'You are a senior network engineer familiar with Juniper cRPD EVPN/VXLAN DC fabrics.',
+   user:'A Juniper cRPD-based DC2 fabric is experiencing inter-rack reachability failures. Describe the systematic triage approach across IS-IS underlay, BGP EVPN overlay, and VXLAN data-plane.',
+   criteria:[
+     {weight:'required', text:'Starts with IS-IS underlay — adjacency state and loopback reachability'},
+     {weight:'required', text:'Then checks BGP EVPN session state and Type-2/3/5 route advertisement'},
+     {weight:'required', text:'Then validates VXLAN data-plane — tunnel endpoint, VNI mapping, MAC table'},
+     {weight:'bonus', text:'Notes cRPD uses Linux kernel MPLS/VXLAN — kernel state must match JunOS protocol state'},
+   ]},
+
+  // ═══════════════════════════════════════════
+  // NOKIA SR-OS
+  // ═══════════════════════════════════════════
+
+  {id:'NK-BGP-01', name:'Nokia SR-OS BGP Configuration Essentials',
+   tags:['nokia','bgp'],
+   system:'You are a network engineer specializing in Nokia SR-OS.',
+   user:'A BGP neighbor on Nokia SR-OS will not establish. Walk through the required SR-OS configuration and common pitfalls.',
+   criteria:[
+     {weight:'required', text:'no shutdown required at both group level and neighbor level'},
+     {weight:'required', text:'Checks group and neighbor config — neighbor inherits group settings but can override'},
+     {weight:'required', text:'Verifies peer-as matches remote AS'},
+     {weight:'bonus', text:'Notes next-hop-self must be explicit in iBGP — no automatic behavior in SR-OS'},
+     {weight:'bonus', text:'Checks route-policy is not rejecting all prefixes (SR-OS requires explicit accept)'},
+   ]},
+
+  {id:'NK-ISIS-01', name:'Nokia SR-OS IS-IS Adjacency and Level Control',
+   tags:['nokia','isis'],
+   system:'You are a network engineer specializing in Nokia SR-OS.',
+   user:'IS-IS adjacency is not forming on a Nokia SR-OS router. What SR-OS-specific configuration and pitfalls should you check?',
+   criteria:[
+     {weight:'required', text:'no shutdown required under IS-IS instance and under each interface'},
+     {weight:'required', text:'level-capability controls L1/L2/L1L2 per interface — default is L1L2 on SR-OS'},
+     {weight:'required', text:'system-id must be unique — derive from loopback IP for consistency'},
+     {weight:'bonus', text:'SR-OS supports multiple IS-IS instances with multi-topology — verify correct instance'},
+   ]},
+
+  {id:'NK-EVPN-01', name:'Nokia SR-OS EVPN Service Configuration',
+   tags:['nokia','evpn','vxlan'],
+   system:'You are a network engineer specializing in Nokia SR-OS EVPN.',
+   user:'EVPN routes are not being advertised from a Nokia SR-OS PE. What SR-OS-specific EVPN configuration is required?',
+   criteria:[
+     {weight:'required', text:'bgp-evpn must be enabled under the service with correct evi and VNI'},
+     {weight:'required', text:'Checks show service id <id> evpn evi for DF status and route advertisement'},
+     {weight:'required', text:'ESI must be identical on both PEs for multihomed CE'},
+     {weight:'bonus', text:'VXLAN: vxlan-instance binding must reference correct service ID and VNI'},
+   ]},
+
+  {id:'NK-SR-01', name:'Nokia SR-OS Segment Routing Essentials',
+   tags:['nokia','segment-routing'],
+   system:'You are a network engineer specializing in Nokia SR-OS.',
+   user:'Segment Routing traffic engineering is not working on Nokia SR-OS. What are the required configuration steps and common pitfalls?',
+   criteria:[
+     {weight:'required', text:'SR must be enabled under protocols isis with source-packet-routing prefix-sid-range'},
+     {weight:'required', text:'SRGB must be configured consistently — verify no overlap between nodes'},
+     {weight:'required', text:'SR-TE policy: verify binding-sid and segment-list are correct'},
+     {weight:'bonus', text:'Notes SR-OS supports both ISIS and OSPF as SR IGP — verify correct protocol enabled'},
+   ]},
+
+  // ═══════════════════════════════════════════
+  // MULTI-VENDOR ORCHESTRATION
+  // ═══════════════════════════════════════════
+
+  {id:'MV-DCI-01', name:'Multi-Vendor DC Interconnect Triage',
+   tags:['multivendor','orchestrator','evpn','mpls'],
+   system:'You are a senior network engineer familiar with multi-vendor DC interconnects (Arista DC1 ↔ Juniper DC2 via MPLS L3VPN PE nodes).',
+   user:'A host in DC1 (Arista EVPN/VXLAN) cannot reach a host in DC2 (Juniper EVPN/VXLAN). The cross-DC path goes through pe1 and pe2 via MPLS L3VPN. Describe your triage sequence across vendors.',
+   criteria:[
+     {weight:'required', text:'Checks intra-DC reachability within each DC first (is the problem DC-local or cross-DC?)'},
+     {weight:'required', text:'Checks EVPN Type-5 route advertisement from DC1 border leaf toward pe1'},
+     {weight:'required', text:'Checks MPLS L3VPN label forwarding between pe1 and pe2'},
+     {weight:'bonus', text:'Notes policy asymmetry as most common cross-vendor failure — one side advertising, other not importing'},
+     {weight:'bonus', text:'Distinguishes MPLS forwarding differences: cRPD kernel MPLS vs EOS hardware MPLS pipeline'},
+   ]},
+
+  {id:'MV-WAN-01', name:'Multi-Vendor WAN BGP Policy Asymmetry',
+   tags:['multivendor','orchestrator','bgp','mpls'],
+   system:'You are a senior network engineer with expertise in multi-vendor WAN (Arista EOS PE/CE + Juniper cRPD P/PE/RR backbone).',
+   user:'Customer routes are visible on Arista PE1 but not being installed on Juniper PE2. BGP VPNv4 sessions are Established. What cross-vendor issues should you investigate?',
+   criteria:[
+     {weight:'required', text:'Checks RT export on Arista PE1 and RT import policy on Juniper PE2'},
+     {weight:'required', text:'Verifies VRF route-distinguisher and route-target are consistent across vendors'},
+     {weight:'required', text:'Checks Juniper PE2 import policy — JunOS requires explicit accept, unlike EOS'},
+     {weight:'bonus', text:'Notes MPLS forwarding differences between cRPD (kernel MPLS) and EOS (hardware ASIC)'},
+     {weight:'bonus', text:'Checks if rr1 (Juniper) is correctly reflecting VPNv4 routes to all PEs'},
+   ]},
+
+];
+
+
+// ── LIVE LAB TEST STATE ──────────────────────────────────────────────────────
+let liveState = {
+  faults: [],
+  currentFault: null,
+  currentRunId: null,
+  skillContent: {},
+};
+
+// Load skill content from the skills-exp definitions (mapped by skill name)
+const SKILL_CONTENT_MAP = {
+  'arista-bgp-troubleshooter': `# Arista EOS BGP Troubleshooter
+
+## Workflow
+1. show bgp summary — check all peer states
+2. show bgp neighbors <IP> — per-peer detail, look for Last error, state
+3. MD5: Active/Idle loop = auth mismatch — verify neighbor <IP> password
+4. show bgp neighbors <IP> advertised-routes / received-routes
+5. show route-map — verify policy
+
+## EOS Pitfalls
+- maximum-paths not set = only 1 ECMP path
+- service routing protocols model multi-agent required for EVPN/SR
+- graceful-restart mismatch causes resets
+
+## Output Format
+### BGP Findings — <device>
+**Status**: Healthy | Degraded | Down
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific command output
+**Recommended Actions**: [ ] fix — READ-ONLY or CONFIG CHANGE`,
+
+  'arista-evpn-troubleshooter': `# Arista EOS EVPN Troubleshooter
+
+## Workflow
+1. show bgp evpn summary — overlay session state
+2. show bgp evpn route-type mac-ip — Type-2 routes
+3. show bgp evpn route-type imet — Type-3 BUM routes
+4. show vxlan address-table — MAC-to-VTEP mappings
+5. show bgp evpn instance — RD/RT per instance
+
+## EOS Pitfalls
+- Missing redistribute learned under MAC-VRF = local MACs not advertised
+- vxlan virtual-router encapsulation mac-address mlag-system-id required on MLAG
+- service routing protocols model multi-agent required
+
+## Output Format
+### EVPN Findings — <device>
+**Status**: Healthy | Degraded | Down
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific command output
+**Recommended Actions**: [ ] fix`,
+
+  'arista-ospf-troubleshooter': `# Arista EOS OSPF Troubleshooter
+
+## Workflow  
+1. show ip ospf neighbor — adjacency states
+2. show ip ospf interface <intf> — timers, area, MTU, auth
+3. ExStart = MTU mismatch — check ip ospf mtu or use ip ospf mtu-ignore
+4. show ip ospf database — LSDB
+5. show ip route ospf — installed routes
+
+## EOS Pitfalls
+- ip ospf area under interface overrides router ospf area
+- Passive interface blocks adjacency
+- Multi-instance: instance tag must match
+
+## Output Format
+### OSPF Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'arista-isis-troubleshooter': `# Arista EOS IS-IS Troubleshooter
+
+## Workflow
+1. show isis neighbors — all adjacencies
+2. show isis interface <intf> — level, hello, metric, auth
+3. EOS default: Level 1-2 on all interfaces
+4. show isis database detail — TLV contents
+5. show ip route isis — installed routes
+
+## EOS Pitfalls
+- net address unique per router
+- Missing address-family ipv4/ipv6 unicast
+- Overload bit excludes router from transit
+- set-overload-bit on-startup wait-for-bgp delays clearing
+
+## Output Format
+### ISIS Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'arista-bfd-troubleshooter': `# Arista EOS BFD Troubleshooter
+
+## Workflow
+1. show bfd peers — all sessions and states
+2. show bfd peers detail — Tx/Rx timers, multiplier, hardware offload
+3. Aggressive timers (100ms x3) cause flaps under load
+4. Check hardware offload: show platform trident bfd
+5. Verify protocol binding: neighbor <IP> bfd under router bgp
+
+## EOS Pitfalls
+- Echo mode mismatch between peers
+- BFD on MLAG peer-link unsupported
+- After EOS upgrade: sessions may not restore without graceful-restart
+
+## Output Format
+### BFD Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'juniper-bgp-troubleshooter': `# Juniper JunOS BGP Troubleshooter
+
+## Workflow
+1. show bgp summary — session states
+2. show bgp neighbor <IP> — error messages, last error
+3. JunOS CRITICAL: No routes sent without explicit export policy
+4. show route advertising-protocol bgp <peer> — what we send
+5. show route receive-protocol bgp <peer> — what we receive
+
+## JunOS Pitfalls
+- Missing export policy = zero prefixes advertised (unlike EOS)
+- Missing family inet unicast under group/neighbor
+- next-hop-self must be explicit for iBGP
+
+## Output Format
+### BGP Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'juniper-isis-troubleshooter': `# Juniper JunOS IS-IS Troubleshooter
+
+## Workflow
+1. show isis adjacency — all adjacencies
+2. show isis interface <intf> — level, hello, auth
+3. JunOS default: L1L2 on all interfaces
+4. family iso must be on all IS-IS interfaces
+5. show route protocol isis — installed routes
+
+## JunOS Pitfalls
+- family iso must be enabled on interface
+- wide-metrics-only must be consistent across all nodes
+- no-adjacency-down-notification masks flapping
+
+## Output Format
+### ISIS Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+
+  'juniper-ospf-troubleshooter': `# Juniper JunOS OSPF Troubleshooter
+
+## Workflow
+1. show ospf neighbor — all adjacency states (Full/Init/2Way/ExStart)
+2. show ospf interface <intf> detail — hello/dead timers, area, metric, passive
+3. ExStart = MTU mismatch or duplicate router-id
+4. show ospf database — LSDB; look for purged or missing LSAs
+5. show route protocol ospf — installed routes
+6. show route <prefix> — trace specific prefix path
+
+## JunOS Pitfalls
+- Passive interface suppresses hellos — check interface config
+- p2p vs broadcast network type mismatch causes stuck adjacency
+- OSPF metric changes affect LDP path selection on backbone
+
+## Output Format
+### OSPF Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'juniper-ldp-troubleshooter': `# Juniper JunOS LDP Troubleshooter (cRPD/Linux kernel)
+
+## Workflow
+1. show ldp session — all LDP sessions and state (Operational/Nonexistent)
+2. show ldp neighbor — discovered neighbors
+3. show route table inet.3 — MPLS label table (populated by LDP)
+4. ip -M route show (Linux) — kernel MPLS forwarding table
+5. show ldp statistics — hello/keepalive counters for auth issues
+
+## cRPD-Specific Requirements
+- Linux kernel MPLS must be enabled: net.mpls.platform_labels=65536
+- net.mpls.conf.<intf>.input=1 on all transit interfaces
+- cRPD uses targeted LDP sessions (link-local hello unreliable on veth)
+- LDP transport-address = router-id (loopback reachable via OSPF)
+
+## JunOS Pitfalls
+- LDP session drops if OSPF loses loopback reachability (transport addr unreachable)
+- Auth mismatch: show ldp statistics shows hello drops
+- inet.3 empty = LDP sessions not established = MPLS blackhole
+
+## Output Format
+### LDP Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output (inet.3 routes, session state, kernel routes)
+**Recommended Actions**: [ ] fix`,
+
+  'juniper-ospf-backbone-troubleshooter': `# Juniper JunOS OSPF Troubleshooter (same as juniper-ospf-troubleshooter)`,
+
+  'arista-l3ls-troubleshooter': `# Arista L3LS Orchestrator
+DC1 fabric: Arista cEOS spine-leaf. Spines=eBGP RR (AS65100), Leaves=eBGP clients (AS65101/65102).
+Triage order: 1) Underlay eBGP (IPv4-UNDERLAY-PEERS) 2) EVPN overlay (EVPN-OVERLAY-PEERS) 3) VXLAN data-plane 4) L2/L3 forwarding.
+Key commands: show bgp evpn summary, show ip bgp summary, show vxlan address-table, show run section router bgp`,
+
+  'juniper-dc-fabric-troubleshooter': `# Juniper DC Fabric Orchestrator
+DC2: Juniper cRPD spine-leaf. eBGP underlay (LEAF-UNDERLAY/SPINE-UNDERLAY groups). EVPN overlay (LEAF-OVERLAY/SPINE-OVERLAY).
+L3-only EVPN — TENANT-A VRF, Type-5 routes, VNI 20010. RT=target:65201:10.
+Triage: 1) eBGP underlay reachability 2) EVPN overlay sessions 3) VRF policy/RT import 4) VXLAN tunnel`,
+
+  'juniper-sp-backbone-troubleshooter': `# Juniper SP Backbone Orchestrator
+Backbone: OSPF area 0 + LDP + iBGP with rr1 as RR. P-routers: p1-p6. PEs: pe1(10.255.1.1), pe2(10.255.1.2). RR: rr1(10.255.2.1).
+Triage: 1) OSPF adjacencies (all PtToPt) 2) LDP sessions (targeted, transport=loopback) 3) iBGP to rr1 4) L3VPN CUSTOMER1`,
+
+  'multivendor-wan-troubleshooter': `# Multivendor WAN Orchestrator
+pe1/pe2 (Juniper, AS65000) connect to DC1 leaves (Arista AS65101) and DC2 (Juniper AS65202) via eBGP.
+iBGP via rr1. L3VPN CUSTOMER1 RD=10.255.1.1:100. Groups: ibgp-rr, DC-EBGP, CE1-EBGP, CE2-EBGP.
+Triage: 1) PE iBGP to rr1 2) PE export policy to rr1 3) DC eBGP sessions 4) L3VPN route import/export`,
+
+  'multivendor-dc-interconnect-troubleshooter': `# Multivendor DCI Orchestrator
+DC1(Arista EVPN/VXLAN) <-> pe1/pe2 (Juniper MPLS L3VPN) <-> DC2(Juniper EVPN/VXLAN L3-only).
+Cross-DC triage: 1) Intra-DC health on both sides 2) DC1 border leaf EVPN Type-5 to pe1 3) pe1 L3VPN to pe2 4) pe2 to DC2 leaf EVPN Type-5`,
+
+  'juniper-bgp-underlay-troubleshooter': `# Juniper JunOS BGP Underlay Troubleshooter (DC2)
+
+## DC2 Architecture
+DC2 uses eBGP for both underlay (inet.0) and EVPN overlay (bgp.evpn.0).
+NO IS-IS. NO LDP. Underlay peers are on 10.2.255.x/30 P2P links.
+EVPN overlay peers are on 10.2.1.x (loopbacks).
+
+## Workflow
+1. show bgp summary — check all peer states (underlay + overlay)
+2. show route table inet.0 — underlay prefix reachability
+3. show bgp neighbor <IP> — per-peer detail, Last error
+4. show route advertising-protocol bgp <peer> — what we send
+5. show policy — verify export policy exists
+
+## JunOS Pitfalls
+- Missing export policy = no routes advertised (unlike EOS)
+- Hold-time mismatch causes session drop
+- group UNDERLAY must have correct export policy
+
+## Output Format
+### BGP Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+
+  'juniper-evpn-troubleshooter': `# Juniper JunOS EVPN Troubleshooter
+
+## Workflow
+1. show bgp summary — EVPN AF state
+2. show evpn database — local MAC/IP entries
+3. show route table bgp.evpn.0 — EVPN routes in BGP
+4. show evpn instance — VNI/VLAN bindings
+5. vrf-target must match between advertising and importing PEs
+
+## JunOS Pitfalls
+- vrf-target mismatch = routes not imported
+- IRB MAC must match across redundant PEs
+- ESI must be identical on both PEs for multihomed CE
+
+## Output Format
+### EVPN Findings — <device>
+**Root Cause Hypothesis**: ranked list
+**Evidence**: specific output
+**Recommended Actions**: [ ] fix`,
+};
+
+async function loadFaults() {
+  try {
+    const r = await fetch(`${API}/faults`, { headers: headers() });
+    liveState.faults = await r.json();
+    renderFaultGrid();
+    loadLiveHistory();
+    document.getElementById('live-score-badge').textContent = `${liveState.faults.length} faults`;
+  } catch(e) {
+    document.getElementById('fault-grid').innerHTML = `<div style="color:var(--red);font-size:11px">Failed to load faults: ${e.message}</div>`;
+  }
+}
+
+function renderFaultGrid() {
+  const grid = document.getElementById('fault-grid');
+  if (!liveState.faults.length) {
+    grid.innerHTML = '<div class="mcp-note">No faults loaded — check clab server connectivity.</div>';
+    return;
+  }
+  grid.innerHTML = liveState.faults.map(f => `
+    <div class="fault-card" onclick="openFault('${f.id}')">
+      <div class="fault-card-id">${f.id} · ${f.skill}</div>
+      <div class="fault-card-name">${f.title}</div>
+      <div class="fault-card-device">Device: ${f.device} (${f.mgmt_ip})</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${f.symptom}</div>
+    </div>`).join('');
+}
+
+function openFault(faultId) {
+  liveState.currentFault = liveState.faults.find(f => f.id === faultId);
+  liveState.currentRunId = null;
+  const f = liveState.currentFault;
+
+  document.getElementById('fault-grid').style.display = 'none';
+  document.getElementById('live-history').style.display = 'none';
+  document.getElementById('live-run-panel').style.display = 'block';
+
+  document.getElementById('live-fault-title').textContent = f.title;
+  document.getElementById('live-fault-meta').textContent = `${f.id} · ${f.skill}`;
+  document.getElementById('live-device').textContent = `${f.device} (${f.mgmt_ip})`;
+  document.getElementById('live-symptom').textContent = f.symptom;
+  document.getElementById('live-skill').textContent = f.skill;
+  document.getElementById('live-optimal').textContent = (f.optimal_tool_sequence || []).join(' → ');
+  document.getElementById('expected-answer').textContent = `Root cause: ${f.root_cause}\nFix: ${f.fix_command}`;
+
+  // Reset phases
+  document.getElementById('phase-inject').classList.remove('hidden');
+  document.getElementById('phase-run').classList.add('hidden');
+  document.getElementById('phase-results').classList.add('hidden');
+  document.getElementById('inject-status').textContent = '';
+  document.getElementById('inject-btn').disabled = false;
+  document.getElementById('inject-btn').textContent = '⚡ INJECT FAULT INTO LAB';
+}
+
+function closeLivePanel() {
+  document.getElementById('live-run-panel').style.display = 'none';
+  document.getElementById('fault-grid').style.display = 'grid';
+  document.getElementById('live-history').style.display = 'block';
+  liveState.currentFault = null;
+  liveState.currentRunId = null;
+}
+
+async function injectFault() {
+  const f = liveState.currentFault;
+  const btn = document.getElementById('inject-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Injecting...';
+  document.getElementById('inject-status').textContent = '';
+
+  try {
+    const r = await fetch(`${API}/live/inject`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ fault_id: f.id })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    liveState.currentRunId = d.run_id;
+    document.getElementById('inject-status').textContent = '✓ Fault injected: ' + d.output.split('\n').slice(-1)[0];
+    document.getElementById('phase-inject').classList.add('hidden');
+    document.getElementById('phase-run').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('inject-status').textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '⚡ INJECT FAULT INTO LAB';
+  }
+}
+
+async function runLLM() {
+  const f = liveState.currentFault;
+  const btn = document.getElementById('run-llm-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Claude diagnosing...';
+  document.getElementById('run-status').textContent = 'Sending skill content + live MCP tool access to Claude...';
+
+  // Fetch skill content — try backend (live SKILL.md) first, fall back to local map
+  let skillContent = SKILL_CONTENT_MAP[f.skill] || null;
+  if (!skillContent) {
+    try {
+      const sr = await fetch(`${API}/skill/${f.skill}`, { headers: headers() });
+      if (sr.ok) {
+        const sd = await sr.json();
+        skillContent = sd.content;
+      }
+    } catch {}
+  }
+  if (!skillContent) skillContent = `Use systematic troubleshooting methodology for ${f.skill}.`;
+
+  try {
+    const r = await fetch(`${API}/live/run`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({
+        run_id: liveState.currentRunId,
+        skill_content: skillContent,
+        fault_meta: f,
+        model: 'claude-sonnet-4-6'
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+
+    // Show results
+    document.getElementById('phase-run').classList.add('hidden');
+    document.getElementById('phase-results').classList.remove('hidden');
+    document.getElementById('live-response-box').textContent = d.llm_response;
+
+    // Score display
+    const s = d.auto_score;
+    document.getElementById('sc-total-val').textContent = s.total;
+    document.getElementById('sc-grade').textContent = s.grade;
+    document.getElementById('sc-grade').className = `sc-grade ${s.grade}`;
+    document.getElementById('sc-rc').textContent = s.root_cause;
+    document.getElementById('sc-ts').textContent = s.tool_sequence;
+    document.getElementById('sc-fp').textContent = s.fix_proposed;
+    document.getElementById('sc-eff').textContent = s.efficiency;
+
+    loadLiveHistory();
+    btn.disabled = false;
+    btn.textContent = '▶ RUN CLAUDE DIAGNOSIS';
+    document.getElementById('run-status').textContent = '';
+  } catch(e) {
+    document.getElementById('run-status').textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '▶ RUN CLAUDE DIAGNOSIS';
+  }
+}
+
+async function restoreLab() {
+  document.getElementById('restore-status').textContent = 'Restoring lab...';
+  try {
+    const r = await fetch(`${API}/live/restore`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ run_id: liveState.currentRunId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    document.getElementById('restore-status').textContent = '✓ Lab restored: ' + d.output.split('\n').slice(-1)[0];
+    // Re-enable inject for another run
+    document.getElementById('phase-results').classList.add('hidden');
+    document.getElementById('phase-inject').classList.remove('hidden');
+    document.getElementById('inject-btn').disabled = false;
+    document.getElementById('inject-btn').textContent = '⚡ INJECT FAULT AGAIN';
+  } catch(e) {
+    document.getElementById('restore-status').textContent = 'Restore error: ' + e.message;
+  }
+}
+
+async function loadLiveHistory() {
+  try {
+    const r = await fetch(`${API}/live/runs`, { headers: headers() });
+    const runs = await r.json();
+    const tbody = document.getElementById('live-history-body');
+    if (!runs.length) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">No runs yet</td></tr>'; return; }
+    tbody.innerHTML = runs.map(run => {
+      const s = run.auto_score || {};
+      return `<tr>
+        <td>${escHtml(run.fault_id)}</td>
+        <td>${s.total ?? '—'}/100</td>
+        <td style="color:${s.grade==='PASS'?'var(--green)':s.grade==='PARTIAL'?'var(--yellow)':'var(--red)'}">${s.grade || run.status}</td>
+        <td>${run.duration_ms ? (run.duration_ms/1000).toFixed(1)+'s' : '—'}</td>
+        <td>${run.created_at ? fmtDate(run.created_at) : '—'}</td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+
+
+
+
+</script>
+</body>
+</html>

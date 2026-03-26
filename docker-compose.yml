@@ -1,0 +1,38 @@
+services:
+  backend:
+    build: ./backend
+    container_name: netops-backend
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./ssh:/app/ssh:ro
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/netops.db
+      - PORT=3001
+      - ADMIN_PASSWORD=
+      - ANTHROPIC_API_KEY=
+      - CORS_ORIGIN=https://runner.amazan.me,http://10.0.0.43:8080
+      - CLAB_HOST=10.0.0.71
+      - CLAB_USER=jamazan
+      - CLAB_KEY=/app/ssh/server
+      - FAULT_DIR=/home/jamazan/netclaw-faults
+      - MCP_CALL=/home/jamazan/netclaw/netclaw/scripts/mcp-call.py
+      - CLAB_MCP=/home/jamazan/netclaw/netclaw/mcp-servers/clab-mcp-server/clab_mcp_server.py
+    networks:
+      - netops
+
+  frontend:
+    build: ./frontend
+    container_name: netops-frontend
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+    networks:
+      - netops
+
+networks:
+  netops:
+    driver: bridge

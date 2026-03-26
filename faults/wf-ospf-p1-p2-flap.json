@@ -1,0 +1,16 @@
+{
+  "id": "wf-ospf-p1-p2-flap",
+  "skill": "juniper-ldp-troubleshooter",
+  "title": "OSPF Adjacency Down \u2014 p1 to p2 link passive, LDP labels lost",
+  "device": "p1",
+  "mgmt_ip": "100.68.0.111",
+  "symptom": "p1 logging OSPF adjacency loss with p2 (100.68.0.112). MPLS labels reprogramming frequently. LDP session to p2 dropping.",
+  "root_cause": "p1 eth2 interface (toward p2) set to OSPF passive \u2014 hellos suppressed, adjacency drops",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth2 passive",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ospf interface detail",
+    "show ldp session",
+    "show route protocol ospf"
+  ]
+}

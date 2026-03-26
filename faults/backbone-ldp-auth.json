@@ -1,0 +1,16 @@
+{
+  "id": "backbone-ldp-auth",
+  "skill": "juniper-ldp-troubleshooter",
+  "title": "LDP Auth Mismatch \u2014 p1 to p5 targeted session drops",
+  "device": "p1",
+  "mgmt_ip": "100.68.0.111",
+  "symptom": "MPLS labels for paths via p5 missing from p1 inet.3 \u2014 L3VPN traffic blackholed on some paths",
+  "root_cause": "MD5 authentication key added to p1 targeted LDP session toward p5 with wrong value",
+  "fix_command": "delete protocols ldp session 10.255.0.5 authentication-key",
+  "optimal_tool_sequence": [
+    "show ldp session",
+    "show ldp neighbor",
+    "show route table inet.3",
+    "show ldp statistics"
+  ]
+}

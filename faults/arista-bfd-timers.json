@@ -1,0 +1,15 @@
+{
+  "id": "arista-bfd-timers",
+  "skill": "arista-bfd-troubleshooter",
+  "title": "BFD Disabled on EVPN Peers \u2014 dc1-leaf2a loses fast failure detection",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "BFD sessions to dc1-spine1 and dc1-spine2 are missing from dc1-leaf2a. BGP sessions remain up but fast failover is broken.",
+  "root_cause": "neighbor EVPN-OVERLAY-PEERS bfd removed from router bgp 65102 on dc1-leaf2a",
+  "fix_command": "router bgp 65102\nneighbor EVPN-OVERLAY-PEERS bfd",
+  "optimal_tool_sequence": [
+    "show bfd peers",
+    "show run section bfd",
+    "show bgp neighbors 10.255.0.1 detail"
+  ]
+}

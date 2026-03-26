@@ -1,0 +1,16 @@
+{
+  "id": "juniper-bgp-export",
+  "skill": "juniper-bgp-troubleshooter",
+  "title": "BGP Export Policy Removed — dc2-spine1 stops advertising underlay routes",
+  "device": "dc2-spine1",
+  "mgmt_ip": "100.68.0.21",
+  "symptom": "DC2 leaf nodes stop receiving underlay prefixes from dc2-spine1. BGP sessions stay up but inet.0 routes from spine1 disappear from leaf routing tables.",
+  "root_cause": "export policy removed from protocols bgp group LEAF-UNDERLAY on dc2-spine1",
+  "fix_command": "set protocols bgp group LEAF-UNDERLAY export EXPORT-ALL",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show route advertising-protocol bgp 10.2.255.1",
+    "show bgp group LEAF-UNDERLAY",
+    "show policy EXPORT-ALL"
+  ]
+}

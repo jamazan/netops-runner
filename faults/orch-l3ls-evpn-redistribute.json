@@ -1,0 +1,16 @@
+{
+  "id": "orch-l3ls-evpn-redistribute",
+  "skill": "arista-l3ls-troubleshooter",
+  "title": "[L3LS] MAC learning failure \u2014 DC1 leaf1b VLAN 11",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "Hosts in VLAN 11 on dc1-leaf1b are reachable locally but cannot be reached from dc1-leaf1a or dc1-leaf2a. BGP sessions appear healthy. Triage using L3LS orchestrator.",
+  "root_cause": "redistribute learned removed from router bgp 65101 vlan 11 on dc1-leaf1b \u2014 local MACs not advertised as EVPN Type-2 routes",
+  "fix_command": "router bgp 65101\nvlan 11\nredistribute learned",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show vxlan address-table",
+    "show run section router bgp"
+  ]
+}
