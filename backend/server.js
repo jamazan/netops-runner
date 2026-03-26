@@ -19,7 +19,12 @@ const CLAB_KEY  = process.env.CLAB_KEY  || '/app/ssh/server';
 const MCP_CALL  = process.env.MCP_CALL  || '/home/jamazan/netclaw/netclaw/scripts/mcp-call.py';
 const CLAB_MCP  = process.env.CLAB_MCP  || '/home/jamazan/netclaw/netclaw/mcp-servers/clab-mcp-server/clab_mcp_server.py';
 const PYATS_MCP = process.env.PYATS_MCP || '/home/jamazan/netclaw/netclaw/mcp-servers/pyATS_MCP/pyats_mcp_server.py';
-const FAULT_DIR = process.env.FAULT_DIR || '/home/jamazan/netclaw-faults';
+const FAULT_DIR       = process.env.FAULT_DIR        || '/home/jamazan/netclaw-faults';
+const SKILLS_REPO       = process.env.SKILLS_REPO       || '';
+const SKILLS_REPO_PATH  = process.env.SKILLS_REPO_PATH  || '';
+const SKILLS_DIR        = process.env.SKILLS_DIR        || '';
+const SKILLS_REPO_TOKEN = process.env.SKILLS_REPO_TOKEN || '';
+const SKILLS_REPO_BRANCH= process.env.SKILLS_REPO_BRANCH|| 'main';
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
@@ -424,8 +429,114 @@ app.patch('/api/skill/:name', requireAuth, async (req, res) => {
       const { code: code2 } = await sshExec(`test -f "${netSkillPath}" && python3 -c "open('${netSkillPath}', 'w').write('''${escaped}''')" || echo "skip"`);
     } catch {}
 
+    // Commit back to skills repo if configured
+    let commit_sha = null;
+    if (SKILLS_REPO_PATH && SKILLS_REPO_TOKEN) {
+      try {
+        // Get score improvement context from run
+        const run = db.prepare('SELECT auto_score FROM live_runs WHERE id=?').get(run_id || '');
+        const score = run ? JSON.parse(run.auto_score || '{}') : {};
+
+        // Write to the authoritative repo location
+        const repoSkillPath = `${SKILLS_REPO_PATH}/.claude/skills/${name}/SKILL.md`;
+        const { code: writeCode } = await sshExec(
+          `test -d "${SKILLS_REPO_PATH}/.claude/skills/${name}" && python3 -c "open('${repoSkillPath}', 'w').write(open('${FAULT_DIR}/skills/${name}.md').read())" || echo "skip"`
+        );
+
+        if (writeCode === 0) {
+          const commitMsg = `perf: optimize ${name} — score ${score.total || '?'}/100 (${score.grade || '?'})\n\nAuto-optimized by NetOps Runner skill optimizer.\nRun ID: ${run_id || 'manual'}`;
+          const commitCmd = `
+            cd "${SKILLS_REPO_PATH}" &&
+            git config user.email "netops-runner@local" &&
+            git config user.name "NetOps Runner" &&
+            git add ".claude/skills/${name}/SKILL.md" &&
+            git diff --cached --quiet || (git commit -m "${commitMsg.replace(/"/g, '\"')}" && echo "COMMITTED") 2>&1
+          `;
+          const { stdout: commitOut } = await sshExec(commitCmd);
+          if (commitOut.includes('COMMITTED')) {
+            // Push back to repo
+            const tokenRepo = SKILLS_REPO.replace('https://', `https://${SKILLS_REPO_TOKEN}@`);
+            const { stdout: pushOut } = await sshExec(
+              `cd "${SKILLS_REPO_PATH}" && git push "${tokenRepo}" ${SKILLS_REPO_BRANCH} 2>&1`
+            );
+            commit_sha = pushOut.includes('main') || pushOut.includes('master') ? 'pushed' : 'local_only';
+          }
+        }
+      } catch(gitErr) {
+        console.error('Git push failed (non-fatal):', gitErr.message);
+      }
+    }
+
     audit(req.user.id, 'PATCH', `/api/skill/${name}`, 200, `Skill updated: ${name} from run: ${run_id}`);
-    res.json({ ok: true, skill: name });
+    res.json({ ok: true, skill: name, committed: !!commit_sha, repo_status: commit_sha });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+// ── Skills repo sync ─────────────────────────────────────────────────────────
+
+// Helper: sync skills from repo to network-skills dir on clab host
+async function syncSkillsFromRepo() {
+  if (!SKILLS_REPO || !SKILLS_REPO_PATH || !SKILLS_DIR) {
+    return { ok: false, message: 'SKILLS_REPO not configured' };
+  }
+  const tokenRepo = SKILLS_REPO.replace('https://', `https://${SKILLS_REPO_TOKEN}@`);
+
+  // Clone if not exists, pull if it does
+  const cloneOrPull = `
+    if [ -d "${SKILLS_REPO_PATH}/.git" ]; then
+      cd "${SKILLS_REPO_PATH}" && git pull origin ${SKILLS_REPO_BRANCH} 2>&1
+    else
+      git clone --depth 1 -b ${SKILLS_REPO_BRANCH} "${tokenRepo}" "${SKILLS_REPO_PATH}" 2>&1
+    fi
+  `;
+  const { stdout: pullOut, code: pullCode } = await sshExec(cloneOrPull);
+  if (pullCode !== 0) return { ok: false, message: pullOut };
+
+  // Sync .claude/skills/ → SKILLS_DIR (rsync, preserving structure)
+  const syncCmd = `
+    mkdir -p "${SKILLS_DIR}" &&
+    rsync -a --delete "${SKILLS_REPO_PATH}/.claude/skills/" "${SKILLS_DIR}/" 2>&1
+  `;
+  const { stdout: syncOut, code: syncCode } = await sshExec(syncCmd);
+  if (syncCode !== 0) return { ok: false, message: syncOut };
+
+  // Count skills synced
+  const { stdout: countOut } = await sshExec(`ls "${SKILLS_DIR}" | grep -c troubleshooter || echo 0`);
+  return { ok: true, message: pullOut.trim().split('\n').slice(-1)[0], skills_count: parseInt(countOut) || 0 };
+}
+
+// POST /api/skills/sync — pull latest from repo and sync to clab host (admin only)
+app.post('/api/skills/sync', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await syncSkillsFromRepo();
+    audit(req.user.id, 'POST', '/api/skills/sync', result.ok ? 200 : 500, result.message);
+    result.ok ? res.json(result) : res.status(500).json({ error: result.message });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/skills/status — check repo sync status
+app.get('/api/skills/status', requireAuth, async (req, res) => {
+  if (!SKILLS_REPO_PATH) return res.json({ configured: false });
+  try {
+    const { stdout: logOut } = await sshExec(
+      `cd "${SKILLS_REPO_PATH}" 2>/dev/null && git log -1 --format="%H %ai %s" 2>/dev/null || echo "not_cloned"`
+    );
+    const { stdout: countOut } = await sshExec(`ls "${SKILLS_DIR}" 2>/dev/null | grep -c troubleshooter || echo 0`);
+    const parts = logOut.trim().split(' ');
+    res.json({
+      configured: true,
+      repo: SKILLS_REPO.replace(/\/\/.*@/, '//'),  // strip token from URL
+      branch: SKILLS_REPO_BRANCH,
+      last_commit: parts[0] === 'not_cloned' ? null : parts[0]?.slice(0,8),
+      last_sync: parts[0] === 'not_cloned' ? null : parts.slice(1, 3).join(' '),
+      last_message: parts[0] === 'not_cloned' ? 'Not yet cloned' : parts.slice(3).join(' '),
+      skills_count: parseInt(countOut) || 0,
+    });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }

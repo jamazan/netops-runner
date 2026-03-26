@@ -399,6 +399,16 @@
       </table>
     </div>
     <div class="admin-section">
+      <div class="admin-section-title">SKILLS REPOSITORY</div>
+      <div id="skills-repo-status" style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
+        <span class="spinner"></span> Checking...
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn primary" onclick="syncSkills()" id="btn-sync-skills">↓ SYNC FROM REPO</button>
+        <div id="sync-status" style="font-size:11px;color:var(--text-dim)"></div>
+      </div>
+    </div>
+    <div class="admin-section">
       <div class="admin-section-title">SERVER</div>
       <div style="color:var(--text-dim);font-size:11px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
       <button class="btn" onclick="exportData()">EXPORT DB</button>
@@ -483,7 +493,7 @@ function showApp(){
   document.getElementById('tab-live').classList.add('active');
   document.getElementById('tab-content-live').classList.remove('hidden');
   loadResults().then(()=>{renderTestGrid('skills');loadFaults();});
-  if(state.user.is_admin)loadAdminData();
+  if(state.user.is_admin){loadAdminData();loadSkillsStatus();}
 }
 async function loadResults(){
   try{
@@ -654,7 +664,7 @@ function showTab(tab){
   if(tab==='live'){loadFaults();loadLiveHistory();}
   if(tab==='skills')loadResults().then(()=>renderTestGrid('skills'));
   if(tab==='results')loadResultsTab();
-  if(tab==='admin')loadAdminData();
+  if(tab==='admin'){loadAdminData();loadSkillsStatus();}
 }
 async function loadResultsTab(){
   await loadResults();
@@ -805,7 +815,8 @@ async function acceptSkillPatch() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error);
     btn.textContent = '✓ APPLIED';
-    document.getElementById('optimize-status').textContent = `Skill "${optimizeState.skillName}" updated successfully`;
+    const repoMsg = d.committed ? ` · pushed to repo` : '';
+    document.getElementById('optimize-status').textContent = `Skill "${optimizeState.skillName}" updated${repoMsg}`;
     document.getElementById('optimize-status').style.color = 'var(--green)';
     document.getElementById('btn-rerun-after-patch').style.display = 'block';
   } catch(e) {
@@ -818,6 +829,49 @@ async function acceptSkillPatch() {
 async function rerunAfterPatch() {
   closeOptimizeModal();
   await runLLM();
+}
+
+async function loadSkillsStatus() {
+  const el = document.getElementById('skills-repo-status');
+  if (!el) return;
+  try {
+    const r = await fetch(`${API}/skills/status`, { headers: headers() });
+    const d = await r.json();
+    if (!d.configured) {
+      el.innerHTML = '<span style="color:var(--text-dim)">Not configured — set SKILLS_REPO in .env</span>';
+      return;
+    }
+    const syncedAgo = d.last_sync ? `Last synced: ${d.last_sync}` : 'Not yet synced';
+    el.innerHTML = `
+      <div>Repo: <span style="color:var(--accent)">${escHtml(d.repo || '')}</span> (${escHtml(d.branch || 'main')})</div>
+      <div style="margin-top:3px">${syncedAgo} · ${d.skills_count} skills loaded</div>
+      ${d.last_commit ? `<div style="margin-top:3px;color:var(--text-dim)">Commit: ${escHtml(d.last_commit)} — ${escHtml(d.last_message || '')}</div>` : ''}
+    `;
+  } catch(e) {
+    el.textContent = 'Error: ' + (e.message || String(e));
+  }
+}
+
+async function syncSkills() {
+  const btn = document.getElementById('btn-sync-skills');
+  const status = document.getElementById('sync-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Syncing...';
+  status.textContent = '';
+  try {
+    const r = await fetch(`${API}/skills/sync`, { method: 'POST', headers: { ...headers(), 'X-Admin-Password': getAdminPw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    status.textContent = `✓ ${d.skills_count} skills synced — ${d.message}`;
+    status.style.color = 'var(--green)';
+    loadSkillsStatus();
+  } catch(e) {
+    status.textContent = 'Error: ' + (e?.error?.message || e?.message || String(e));
+    status.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↓ SYNC FROM REPO';
+  }
 }
 
 function closeOptimizeModal() {
