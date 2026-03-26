@@ -277,6 +277,160 @@ Respond ONLY with valid JSON, no markdown:
 // ── LIVE TEST ROUTES ─────────────────────────────────────────────────────────
 
 
+
+// POST /api/skill/optimize — analyze a failed run and suggest skill improvements
+app.post('/api/skill/optimize', requireAuth, async (req, res) => {
+  const { run_id } = req.body;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'No ANTHROPIC_API_KEY configured' });
+  if (!run_id) return res.status(400).json({ error: 'run_id required' });
+
+  const run = db.prepare('SELECT * FROM live_runs WHERE id=? AND user_id=?').get(run_id, req.user.id);
+  if (!run) return res.status(404).json({ error: 'Run not found' });
+  if (run.status !== 'complete') return res.status(400).json({ error: 'Run not complete' });
+
+  const autoScore = JSON.parse(run.auto_score || '{}');
+  if (autoScore.grade === 'PASS') return res.status(400).json({ error: 'Run already passed — no optimization needed' });
+
+  // Fetch current skill content from clab host
+  let skillContent = '';
+  try {
+    const { stdout } = await sshExec(`cat "${FAULT_DIR}/skills/${run.fault_id.replace(/[^a-z0-9-]/g,'')}.md" 2>/dev/null || echo ""`);
+    skillContent = stdout.trim();
+  } catch {}
+
+  // Fetch fault metadata
+  let faultMeta = {};
+  try {
+    const { stdout } = await sshExec(`cat "${FAULT_DIR}/${run.fault_id}.json" 2>/dev/null || echo "{}"`);
+    faultMeta = JSON.parse(stdout);
+  } catch {}
+
+  // Also try the network-skills directory for sub-skill content
+  if (!skillContent) {
+    try {
+      const skillName = faultMeta.skill || '';
+      const { stdout } = await sshExec(`cat "/home/${process.env.CLAB_USER}/network-skills/${skillName}/SKILL.md" 2>/dev/null || echo ""`);
+      skillContent = stdout.trim();
+    } catch {}
+  }
+
+  const scoreBreakdown = `
+- Total: ${autoScore.total}/100 (${autoScore.grade})
+- Root Cause: ${autoScore.root_cause}/40
+- Tool Sequence: ${autoScore.tool_sequence}/30
+- Fix Proposed: ${autoScore.fix_proposed}/20
+- Efficiency: ${autoScore.efficiency}/10`;
+
+  const optimizePrompt = `You are a skill optimizer for an LLM network engineering evaluation platform.
+
+## Context
+A Claude LLM was given a skill document and asked to diagnose a real network fault. It scored poorly. Your job is to analyze WHY it failed and produce an improved version of the skill document that would help it pass.
+
+## The Fault
+- ID: ${faultMeta.id || run.fault_id}
+- Title: ${faultMeta.title || 'Unknown'}
+- Symptom given to LLM: ${faultMeta.symptom || 'Unknown'}
+- Ground truth root cause: ${faultMeta.root_cause || 'Unknown'}
+- Expected fix command: ${faultMeta.fix_command || 'Unknown'}
+- Optimal tool sequence: ${(faultMeta.optimal_tool_sequence || []).join(' → ')}
+
+## Score Breakdown
+${scoreBreakdown}
+
+## Current Skill Content
+\`\`\`
+${skillContent || '(no skill content found)'}
+\`\`\`
+
+## LLM Response (what it actually said)
+\`\`\`
+${(run.llm_response || '').slice(0, 3000)}
+\`\`\`
+
+## Analysis Task
+1. Identify exactly what information was MISSING from the skill that caused the LLM to fail each scoring dimension
+2. Identify any MISLEADING information in the skill that led the LLM in the wrong direction
+3. Produce an IMPROVED version of the skill document that would guide the LLM to the correct answer
+
+## Rules for the improved skill
+- Keep the same structure and format as the original
+- Only add/modify what's necessary — don't rewrite sections that are fine
+- Add specific EOS/JunOS command examples relevant to this failure mode
+- Add the root cause pattern to the "Common Pitfalls" or equivalent section
+- Keep it concise — LLMs perform better with focused, dense skill docs
+
+## Output Format
+Respond with a JSON object ONLY (no markdown, no explanation outside JSON):
+{
+  "analysis": "2-3 sentences explaining why the LLM failed",
+  "changes": [
+    {"section": "section name", "type": "add|modify|remove", "reason": "why this change helps"},
+    ...
+  ],
+  "improved_skill": "the full improved SKILL.md content"
+}`;
+
+  try {
+    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: optimizePrompt }]
+      })
+    });
+    const data = await upstream.json();
+    if (!upstream.ok) throw new Error(data.error?.message || `HTTP ${upstream.status}`);
+
+    const raw = data.content?.[0]?.text || '{}';
+    const clean = raw.replace(/^```json\s*/,'').replace(/```\s*$/,'').trim();
+    const result = JSON.parse(clean);
+
+    // Generate a simple line-level diff
+    const oldLines = (skillContent || '').split('\n');
+    const newLines = (result.improved_skill || '').split('\n');
+    result.original_skill = skillContent;
+    result.skill_name = faultMeta.skill || run.fault_id;
+    result.run_id = run_id;
+
+    audit(req.user.id, 'POST', '/api/skill/optimize', 200, `Optimized skill for run: ${run_id}`);
+    res.json(result);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /api/skill/:name — write updated skill content back to clab host
+app.patch('/api/skill/:name', requireAuth, async (req, res) => {
+  const name = req.params.name;
+  if (!/^[\w-]+$/.test(name)) return res.status(400).json({ error: 'Invalid skill name' });
+  const { content, run_id } = req.body;
+  if (!content?.trim()) return res.status(400).json({ error: 'content required' });
+
+  try {
+    // Write to skills/ cache dir on clab host
+    const skillsPath = `${FAULT_DIR}/skills/${name}.md`;
+    // Escape content for shell — write via python to avoid quoting issues
+    const escaped = content.replace(/\\/g, '\\\\').replace(/'/g, "'\"'\"'");
+    const cmd = `python3 -c "open('${skillsPath}', 'w').write('''${escaped}''')"`;
+    const { code, stderr } = await sshExec(cmd);
+    if (code !== 0) throw new Error(stderr || 'Write failed');
+
+    // Also try to write to the authoritative network-skills directory
+    try {
+      const netSkillPath = `/home/${process.env.CLAB_USER}/network-skills/${name}/SKILL.md`;
+      const { code: code2 } = await sshExec(`test -f "${netSkillPath}" && python3 -c "open('${netSkillPath}', 'w').write('''${escaped}''')" || echo "skip"`);
+    } catch {}
+
+    audit(req.user.id, 'PATCH', `/api/skill/${name}`, 200, `Skill updated: ${name} from run: ${run_id}`);
+    res.json({ ok: true, skill: name });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/skill/:name — fetch skill content from clab host
 app.get('/api/skill/:name', requireAuth, async (req, res) => {
   const name = req.params.name;

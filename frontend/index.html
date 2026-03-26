@@ -115,6 +115,28 @@
   .as-check{font-size:12px;min-width:14px;}
   .as-note{color:var(--text-dim);font-size:10px;margin-top:2px;}
   .as-summary{font-size:11px;color:var(--text-dim);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px;}
+  .modal-overlay.active{display:flex;}
+  .modal-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:900px;display:flex;flex-direction:column;}
+  .modal-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);gap:12px;}
+  .modal-title{font-size:14px;color:var(--accent);flex:1;}
+  .modal-close{background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:16px;cursor:pointer;padding:0;}
+  .modal-body{padding:18px;overflow-y:auto;max-height:70vh;}
+  .modal-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;}
+  .diff-view{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+  .diff-add{background:#1a3a1a;color:#4caf50;}
+  .diff-remove{background:#3a0a0a;color:#f44336;}
+  .diff-same{color:var(--text-dim);}
+  .opt-analysis{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;font-size:12px;color:var(--text);margin-bottom:14px;line-height:1.6;}
+  .opt-changes{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .opt-change{background:var(--bg);border:1px solid var(--border);padding:6px 12px;font-size:11px;}
+  .opt-change-type{display:inline-block;padding:1px 6px;font-size:9px;font-weight:700;margin-right:6px;}
+  .opt-change-type.add{background:#1a3a1a;color:#4caf50;}
+  .opt-change-type.modify{background:#3a2e0a;color:#ffb300;}
+  .opt-change-type.remove{background:#3a0a0a;color:#f44336;}
+  .btn-accept{background:var(--green);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
+  .btn-reject{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:12px;padding:8px 16px;cursor:pointer;}
+  .btn-rerun{background:var(--accent);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .hidden{display:none!important;}
@@ -269,9 +291,10 @@
           <div class="mcp-note" id="expected-answer"></div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:14px">
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
           <button class="run-btn" onclick="runLLM()" style="font-size:11px;padding:8px 18px">▶ RE-RUN</button>
           <button class="save-btn" onclick="restoreLab()">🔄 RESTORE LAB</button>
+          <button class="btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none;border-color:var(--yellow);color:var(--yellow)">◈ OPTIMIZE SKILL</button>
         </div>
         <div class="status-msg" id="restore-status"></div>
       </div>
@@ -379,6 +402,25 @@
       <div class="admin-section-title">SERVER</div>
       <div style="color:var(--text-dim);font-size:11px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
       <button class="btn" onclick="exportData()">EXPORT DB</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skill Optimizer Modal -->
+<div class="modal-overlay" id="optimize-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">◈ SKILL OPTIMIZER</div>
+      <button class="modal-close" onclick="closeOptimizeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="optimize-modal-body">
+      <div style="color:var(--text-dim);font-size:12px"><span class="spinner"></span> Analyzing failure and generating skill improvements...</div>
+    </div>
+    <div class="modal-footer" id="optimize-modal-footer" style="display:none">
+      <button class="btn-accept" id="btn-accept-skill" onclick="acceptSkillPatch()">✓ APPLY PATCH</button>
+      <button class="btn-rerun" id="btn-rerun-after-patch" style="display:none" onclick="rerunAfterPatch()">▶ RE-RUN TEST</button>
+      <button class="btn-reject" onclick="closeOptimizeModal()">✕ DISCARD</button>
+      <div style="flex:1;font-size:11px;color:var(--text-dim)" id="optimize-status"></div>
     </div>
   </div>
 </div>
@@ -682,6 +724,107 @@ async function createTokens(){
 async function revokeToken(id){if(!confirm('Revoke '+id+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/tokens/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
 async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/users/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
 function exportData(){window.open(`${API}/admin/export`,'_blank');}
+// ── Skill Optimizer ────────────────────────────────────────────────────────
+let optimizeState = { patch: null, skillName: null, runId: null };
+
+async function openOptimizeModal() {
+  const runId = liveState.currentRunId;
+  if (!runId) return;
+  document.getElementById('optimize-modal').classList.add('active');
+  document.getElementById('optimize-modal-footer').style.display = 'none';
+  document.getElementById('optimize-modal-body').innerHTML =
+    '<div style="color:var(--text-dim);font-size:12px"><span class="spinner"></span> Analyzing failure and generating skill improvements...</div>';
+  try {
+    const r = await fetch(`${API}/skill/optimize`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ run_id: runId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    optimizeState.patch = d.improved_skill;
+    optimizeState.skillName = d.skill_name;
+    optimizeState.runId = runId;
+    renderOptimizeDiff(d);
+    document.getElementById('optimize-modal-footer').style.display = 'flex';
+    document.getElementById('btn-rerun-after-patch').style.display = 'none';
+    document.getElementById('optimize-status').textContent = '';
+  } catch(e) {
+    document.getElementById('optimize-modal-body').innerHTML =
+      `<div style="color:var(--red);font-size:12px">Error: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderOptimizeDiff(d) {
+  const body = document.getElementById('optimize-modal-body');
+  // Analysis
+  let html = `<div class="section-header" style="margin-bottom:10px">▸ WHY IT FAILED</div>
+    <div class="opt-analysis">${escHtml(d.analysis || '')}</div>`;
+  // Changes summary
+  if (d.changes?.length) {
+    html += `<div class="section-header" style="margin-bottom:8px">▸ PROPOSED CHANGES</div>
+      <div class="opt-changes">` +
+      d.changes.map(c => `<div class="opt-change">
+        <span class="opt-change-type ${c.type}">${c.type.toUpperCase()}</span>
+        <strong>${escHtml(c.section)}</strong> — ${escHtml(c.reason)}
+      </div>`).join('') + `</div>`;
+  }
+  // Diff view
+  html += `<div class="section-header" style="margin-bottom:8px">▸ SKILL DIFF</div>
+    <div class="diff-view" style="background:var(--bg);border:1px solid var(--border);padding:12px;max-height:400px;overflow-y:auto">`;
+  const oldLines = (d.original_skill || '').split('\n');
+  const newLines = (d.improved_skill || '').split('\n');
+  // Simple line diff — mark added/removed lines
+  const oldSet = new Set(oldLines);
+  const newSet = new Set(newLines);
+  // Show new content with added lines highlighted
+  html += newLines.map(line => {
+    if (!oldSet.has(line) && line.trim()) {
+      return `<div class="diff-add">+ ${escHtml(line)}</div>`;
+    }
+    return `<div class="diff-same">  ${escHtml(line)}</div>`;
+  }).join('');
+  // Show removed lines
+  const removedLines = oldLines.filter(l => !newSet.has(l) && l.trim());
+  if (removedLines.length) {
+    html += removedLines.map(l => `<div class="diff-remove">- ${escHtml(l)}</div>`).join('');
+  }
+  html += `</div>`;
+  body.innerHTML = html;
+}
+
+async function acceptSkillPatch() {
+  if (!optimizeState.patch || !optimizeState.skillName) return;
+  const btn = document.getElementById('btn-accept-skill');
+  btn.disabled = true; btn.textContent = 'Applying...';
+  document.getElementById('optimize-status').textContent = '';
+  try {
+    const r = await fetch(`${API}/skill/${optimizeState.skillName}`, {
+      method: 'PATCH', headers: headers(),
+      body: JSON.stringify({ content: optimizeState.patch, run_id: optimizeState.runId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    btn.textContent = '✓ APPLIED';
+    document.getElementById('optimize-status').textContent = `Skill "${optimizeState.skillName}" updated successfully`;
+    document.getElementById('optimize-status').style.color = 'var(--green)';
+    document.getElementById('btn-rerun-after-patch').style.display = 'block';
+  } catch(e) {
+    document.getElementById('optimize-status').textContent = 'Error: ' + (e?.message || String(e));
+    document.getElementById('optimize-status').style.color = 'var(--red)';
+    btn.disabled = false; btn.textContent = '✓ APPLY PATCH';
+  }
+}
+
+async function rerunAfterPatch() {
+  closeOptimizeModal();
+  await runLLM();
+}
+
+function closeOptimizeModal() {
+  document.getElementById('optimize-modal').classList.remove('active');
+  optimizeState = { patch: null, skillName: null, runId: null };
+}
+
 init();
 
 const SKILL_TESTS = [
@@ -1483,6 +1626,9 @@ async function runLLM() {
     document.getElementById('sc-ts').textContent = s.tool_sequence;
     document.getElementById('sc-fp').textContent = s.fix_proposed;
     document.getElementById('sc-eff').textContent = s.efficiency;
+    // Show optimize button if not a perfect pass
+    const optBtn = document.getElementById('btn-optimize-skill');
+    if(optBtn) optBtn.style.display = (s.grade !== 'PASS' || s.total < 100) ? 'block' : 'none';
 
     loadLiveHistory();
     btn.disabled = false;
