@@ -6,7 +6,7 @@ An LLM evaluation platform for network engineering skills. Injects real faults i
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  NetOps Runner (10.0.0.43)                      │
+│  NetOps Runner (runner-host)                    │
 │  ┌──────────────┐  ┌──────────────────────────┐ │
 │  │   Frontend   │  │       Backend            │ │
 │  │  (nginx:8080)│  │  (Node.js/Express:3001)  │ │
@@ -15,7 +15,7 @@ An LLM evaluation platform for network engineering skills. Injects real faults i
 └─────────────────────────────────────────────────┘
                           │ SSH
 ┌─────────────────────────────────────────────────┐
-│  ContainerLab Host (10.0.0.71)                  │
+│  ContainerLab Host (clab-host)                  │
 │  Multi-site fabric: DC1 (Arista cEOS) +         │
 │  DC2 (Juniper cRPD) + WAN backbone (Juniper)    │
 │  + Campus (Arista cEOS)                         │
@@ -38,7 +38,7 @@ An LLM evaluation platform for network engineering skills. Injects real faults i
 
 Tests are organized in three tiers of difficulty:
 
-### Sub-skill (15) — Protocol-specific, single device
+### Easy — Protocol-specific, single device
 The LLM is given a specific protocol context and must diagnose a known failure layer.
 
 | ID | Device | Fault |
@@ -59,7 +59,7 @@ The LLM is given a specific protocol context and must diagnose a known failure l
 | juniper-evpn-vrf-target | dc2-leaf1a | TENANT-A RT changed to wrong value |
 | ospf-exstart-mtu | dc1-spine1 | Max-routes 1 toward dc1-leaf1a |
 
-### Workflow (6) — Multi-device, realistic NOC scenarios
+### Medium — Multi-device, realistic NOC scenarios
 Broader scope — may involve multiple devices or require cross-layer correlation.
 
 | ID | Scope | Fault |
@@ -71,7 +71,7 @@ Broader scope — may involve multiple devices or require cross-layer correlatio
 | wf-ospf-p1-p2-flap | p1 | OSPF passive on p1→p2, LDP drops |
 | wf-spine1-bgp-underlay | dc1-spine1 | All leaf underlay sessions drop |
 
-### Orchestrator (9) — High-level symptom only, full triage required
+### Hard — Orchestrator skill, full triage required
 Only a vague symptom is given. The LLM must use the orchestrator skill to identify the layer, dispatch to sub-skills, and find the root cause.
 
 | ID | Skill | Symptom |
@@ -118,9 +118,10 @@ faults/
 {
   "id": "arista-bgp-auth",
   "skill": "arista-bgp-troubleshooter",
+  "difficulty": "easy",
   "title": "Human-readable title",
   "device": "dc1-leaf1b",
-  "mgmt_ip": "100.68.0.14",
+  "mgmt_ip": "192.168.x.x",
   "symptom": "What the LLM is told — vague for orchestrator tests",
   "root_cause": "Ground truth used for auto-scoring",
   "fix_command": "Exact CLI fix used for scoring",
@@ -144,8 +145,9 @@ cd netops-runner
 cp ~/.ssh/your_clab_key ssh/server
 chmod 600 ssh/server
 
-# Configure environment in docker-compose.yml:
-#   ANTHROPIC_API_KEY, ADMIN_PASSWORD, CLAB_HOST, CLAB_USER, FAULT_DIR
+# Configure environment — copy and edit the example
+cp .env.example .env
+# Edit .env with your values
 
 docker compose up -d
 ```
@@ -155,7 +157,7 @@ docker compose up -d
 # Copy faults directory to clab host
 scp -r faults/ user@clab-host:/home/user/netclaw-faults/
 
-# The FAULT_DIR env var in docker-compose.yml must point to this path
+# Set FAULT_DIR in .env to match this path
 ```
 
 ### First login
@@ -168,17 +170,19 @@ Use that token at `http://<runner-host>:8080` to create your admin account.
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | required | Anthropic API key for LLM runs |
-| `ADMIN_PASSWORD` | `netops-admin-changeme` | Admin panel password |
-| `PORT` | `3001` | Backend port |
-| `DB_PATH` | `/app/data/netops.db` | SQLite database path |
-| `CLAB_HOST` | `10.0.0.71` | ContainerLab host IP |
-| `CLAB_USER` | `jamazan` | SSH user for clab host |
-| `CLAB_KEY` | `/app/ssh/server` | SSH private key path (mounted) |
-| `FAULT_DIR` | `/home/jamazan/netclaw-faults` | Fault scripts directory on clab host |
-| `CORS_ORIGIN` | `http://localhost:8080` | Allowed CORS origins |
+All configuration lives in `.env` (excluded from git). See `.env.example` for the full list.
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic API key for LLM runs |
+| `ADMIN_PASSWORD` | Admin panel password |
+| `PORT` | Backend port (default: 3001) |
+| `DB_PATH` | SQLite database path |
+| `CLAB_HOST` | ContainerLab host IP |
+| `CLAB_USER` | SSH user for clab host |
+| `CLAB_KEY` | SSH private key path (mounted into container) |
+| `FAULT_DIR` | Fault scripts directory on clab host |
+| `CORS_ORIGIN` | Allowed CORS origins (comma-separated) |
 
 ## Adding New Faults
 
