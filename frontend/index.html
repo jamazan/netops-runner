@@ -132,6 +132,10 @@
   .sc-grade.PASS { color:var(--green); }
   .sc-grade.PARTIAL { color:var(--yellow); }
   .sc-grade.FAIL { color:var(--red); }
+  .diff-easy   { background:#1a3a1a; color:#4caf50; border:1px solid #2d5a2d; }
+  .diff-medium { background:#3a2e0a; color:#ffb300; border:1px solid #5a4a0d; }
+  .diff-hard   { background:#3a0a0a; color:#f44336; border:1px solid #5a1a1a; }
+  .diff-badge  { display:inline-block; font-size:9px; padding:2px 7px; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
   .fault-card { background:var(--bg2); border:1px solid var(--border); padding:14px; cursor:pointer; transition:border-color 0.15s; }
   .fault-card:hover { border-color:var(--accent); }
   .fault-card.has-score { border-left:3px solid var(--green); }
@@ -1356,13 +1360,21 @@ function renderFaultGrid() {
     grid.innerHTML = '<div class="mcp-note">No faults loaded — check clab server connectivity.</div>';
     return;
   }
-  grid.innerHTML = liveState.faults.map(f => `
-    <div class="fault-card" onclick="openFault('${f.id}')">
+  // Sort: easy → medium → hard
+  const diffOrder = {easy:0, medium:1, hard:2};
+  const sorted = [...liveState.faults].sort((a,b) =>
+    (diffOrder[a.difficulty]??1) - (diffOrder[b.difficulty]??1) || a.id.localeCompare(b.id));
+  grid.innerHTML = sorted.map(f => {
+    const d = f.difficulty || 'medium';
+    const label = d === 'easy' ? '◎ EASY' : d === 'hard' ? '◆ HARD' : '◈ MEDIUM';
+    return `<div class="fault-card" onclick="openFault('${f.id}')">
+      <span class="diff-badge diff-${d}">${label}</span>
       <div class="fault-card-id">${f.id} · ${f.skill}</div>
       <div class="fault-card-name">${f.title}</div>
       <div class="fault-card-device">Device: ${f.device} (${f.mgmt_ip})</div>
       <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${f.symptom}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function openFault(faultId) {
