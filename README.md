@@ -198,6 +198,121 @@ All configuration lives in `.env` (excluded from git). See `.env.example` for th
 bash faults/<id>-inject.sh && sleep 3 && bash faults/<id>-restore.sh
 ```
 
+
+## Skills Optimizer
+
+The Skills Optimizer is a feedback loop that uses failed lab runs to automatically improve the skill documents that guide the LLM during diagnosis. When a test scores PARTIAL or FAIL, the optimizer analyzes the gap between what the LLM said and the ground truth, then proposes targeted changes to the relevant SKILL.md.
+
+### How it works
+
+```
+Run Lab Test
+     │
+     ▼
+Score < PASS?
+     │ yes
+     ▼
+◈ OPTIMIZE SKILL button appears
+     │
+     ▼
+Claude Sonnet analyzes:
+  - Current SKILL.md content
+  - Fault scenario + ground truth
+  - LLM response + score breakdown
+     │
+     ▼
+Returns:
+  - Why the LLM failed (per dimension)
+  - Proposed changes (add / modify / remove)
+  - Full improved SKILL.md
+     │
+     ▼
+Diff modal shown to user
+     │
+     ├── ✓ APPLY PATCH ──► Writes to clab host
+     │                      Commits to skills repo
+     │                      ▶ RE-RUN TEST available
+     │
+     └── ✕ DISCARD ──────► No changes made
+```
+
+### Scoring dimensions targeted
+
+| Dimension | What the optimizer fixes |
+|-----------|--------------------------|
+| Root Cause (40pts) | Adds the specific failure pattern and root cause keywords to pitfalls section |
+| Tool Sequence (30pts) | Adds the optimal diagnostic command sequence to the workflow |
+| Fix Proposed (20pts) | Adds the exact fix command with context to the remediation section |
+| Efficiency (10pts) | Trims unnecessary commands, tightens the workflow |
+
+### Human-in-the-loop (current)
+
+The optimizer currently requires manual approval before applying any changes. The diff modal shows exactly what will change before you commit. This is intentional — skill documents are shared across all tests and a bad patch could degrade other scenarios.
+
+### Path to full automation
+
+The acceptance and re-run steps are already wired. To enable fully automated optimization, the loop can be triggered automatically on every PARTIAL/FAIL result:
+
+```
+Run → FAIL → Optimize → Auto-accept if re-run score improves → Commit → Repeat
+```
+
+This is the planned next step. The stopping condition is either PASS or no improvement after N iterations.
+
+---
+
+## Skills Repository
+
+Skill documents are sourced from an external git repository and synced to the clab host at runtime. This keeps skills versioned, shareable, and independently maintainable from the runner itself.
+
+### Sync flow
+
+```
+GitHub (konekti/agent-neo)
+  .claude/skills/<name>/SKILL.md
+         │
+         │  git clone / git pull (on sync)
+         ▼
+clab host: SKILLS_DIR/<name>/SKILL.md
+         │
+         │  SSH fetch (per run)
+         ▼
+Backend injects into LLM system prompt
+```
+
+### Syncing skills
+
+From the **Admin** panel → **Skills Repository** section:
+- View current repo, branch, last commit, and skills count
+- Click **↓ SYNC FROM REPO** to pull the latest skills from the repo
+
+Or trigger via API:
+```bash
+curl -X POST http://<runner-host>:8080/api/skills/sync \
+  -H "X-Session-Id: <sid>" \
+  -H "X-Admin-Password: <password>"
+```
+
+### Push-back after optimization
+
+When a skill patch is accepted, the runner automatically:
+1. Writes the updated skill to the local cache on the clab host
+2. Commits the change to the skills repo with message:
+   `perf: optimize <skill-name> — score X/100 (GRADE)`
+3. Pushes the commit back to the configured branch
+
+This means every accepted optimization becomes a versioned commit in the skills repo, building a history of improvements driven by real test failures.
+
+### Skills repo environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `SKILLS_REPO` | Git URL of the skills repository |
+| `SKILLS_REPO_PATH` | Clone path on the clab host |
+| `SKILLS_DIR` | Directory where skills are synced to |
+| `SKILLS_REPO_TOKEN` | Personal access token for clone + push |
+| `SKILLS_REPO_BRANCH` | Branch to pull from and push to (default: main) |
+
 ## Tech Stack
 
 - **Frontend**: Vanilla JS, IBM Plex Mono, served by nginx
