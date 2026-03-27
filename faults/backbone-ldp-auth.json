@@ -12,5 +12,6 @@
     "show ldp neighbor",
     "show route table inet.3",
     "show ldp statistics"
-  ]
+  ],
+  "difficulty": "medium"
 }

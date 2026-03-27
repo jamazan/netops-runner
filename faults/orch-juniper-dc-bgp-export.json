@@ -12,5 +12,6 @@
     "show route advertising-protocol bgp 10.2.255.1",
     "show bgp group LEAF-UNDERLAY",
     "show policy EXPORT-ALL"
-  ]
+  ],
+  "difficulty": "hard"
 }

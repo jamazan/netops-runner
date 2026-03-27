@@ -12,5 +12,6 @@
     "show ldp session",
     "show route table inet.3",
     "show mpls lsp"
-  ]
+  ],
+  "difficulty": "hard"
 }

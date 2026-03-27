@@ -12,5 +12,6 @@
     "show ospf interface eth1",
     "show route 10.255.2.1",
     "show ospf database router detail"
-  ]
+  ],
+  "difficulty": "easy"
 }

@@ -6,6 +6,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./ssh:/app/ssh:ro
+      - ./faults:/app/faults:ro
     env_file:
       - .env
     networks:

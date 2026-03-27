@@ -11,5 +11,6 @@
     "show bgp evpn summary",
     "show bgp evpn route-type mac-ip",
     "show bgp evpn instance"
-  ]
+  ],
+  "difficulty": "medium"
 }

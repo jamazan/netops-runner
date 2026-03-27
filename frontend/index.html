@@ -13,34 +13,34 @@
     --green:#4caf50;--red:#f44336;--yellow:#ffb300;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;font-size:15px;min-height:100vh;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;font-size:17px;min-height:100vh;}
   #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
   .auth-box{background:var(--bg2);border:1px solid var(--border);padding:40px;width:420px;max-width:95vw;}
   .auth-title{font-size:18px;color:var(--accent);margin-bottom:6px;}
-  .auth-sub{color:var(--text-dim);margin-bottom:28px;font-size:11px;}
-  .auth-label{color:var(--text-dim);font-size:10px;margin-bottom:5px;}
-  .auth-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none;margin-bottom:14px;}
+  .auth-sub{color:var(--text-dim);margin-bottom:28px;font-size:17px;}
+  .auth-label{color:var(--text-dim);font-size:19px;margin-bottom:5px;}
+  .auth-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:19px;padding:10px 12px;outline:none;margin-bottom:14px;}
   .auth-input:focus{border-color:var(--accent);}
-  .auth-btn{width:100%;background:var(--accent);color:#000;font-family:inherit;font-size:13px;font-weight:700;padding:11px;border:none;cursor:pointer;letter-spacing:1px;}
+  .auth-btn{width:100%;background:var(--accent);color:#000;font-family:inherit;font-size:19px;font-weight:700;padding:11px;border:none;cursor:pointer;letter-spacing:1px;}
   .auth-btn:hover{background:var(--accent2);}
-  .auth-error{color:var(--red);font-size:11px;margin-top:10px;min-height:16px;}
+  .auth-error{color:var(--red);font-size:17px;margin-top:10px;min-height:16px;}
   #app{display:none;}
   .topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 20px;height:44px;}
-  .topbar-title{color:var(--accent);font-size:14px;font-weight:700;flex:1;}
-  .topbar-user{color:var(--text-dim);font-size:11px;}
-  .topbar-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:11px;padding:4px 10px;cursor:pointer;}
+  .topbar-title{color:var(--accent);font-size:17px;font-weight:700;flex:1;}
+  .topbar-user{color:var(--text-dim);font-size:17px;}
+  .topbar-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:17px;padding:4px 10px;cursor:pointer;}
   .topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
   .tabnav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;}
-  .tab{padding:10px 18px;cursor:pointer;font-size:11px;color:var(--text-dim);border-bottom:2px solid transparent;letter-spacing:0.5px;}
+  .tab{padding:10px 18px;cursor:pointer;font-size:17px;color:var(--text-dim);border-bottom:2px solid transparent;letter-spacing:0.5px;}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
   .tab:hover:not(.active){color:var(--text);}
   .content{padding:24px 28px;max-width:1300px;}
-  .section-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .section-label{font-size:17px;color:var(--text-dim);letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
   .tests-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-  .tests-title{font-size:14px;color:var(--text-bright);}
-  .score-badge{background:var(--bg3);border:1px solid var(--border);padding:3px 10px;font-size:11px;color:var(--accent);}
+  .tests-title{font-size:17px;color:var(--text-bright);}
+  .score-badge{background:var(--bg3);border:1px solid var(--border);padding:3px 10px;font-size:17px;color:var(--accent);}
   .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-  .filter-btn{font-family:inherit;font-size:10px;padding:3px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text-dim);cursor:pointer;}
+  .filter-btn{font-family:inherit;font-size:19px;padding:3px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text-dim);cursor:pointer;}
   .filter-btn.active{border-color:var(--accent);color:var(--accent);}
   .test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
   .test-card{background:var(--bg2);border:1px solid var(--border);padding:14px;cursor:pointer;transition:border-color 0.15s;}
@@ -48,10 +48,10 @@
   .test-card.pass{border-left:3px solid var(--green);}
   .test-card.fail{border-left:3px solid var(--red);}
   .test-card.partial{border-left:3px solid var(--yellow);}
-  .test-card-id{font-size:10px;color:var(--text-dim);margin-bottom:5px;}
-  .test-card-name{font-size:12px;color:var(--text-bright);margin-bottom:6px;}
+  .test-card-id{font-size:19px;color:var(--text-dim);margin-bottom:5px;}
+  .test-card-name{font-size:15px;color:var(--text-bright);margin-bottom:6px;}
   .test-card-tags{display:flex;gap:5px;flex-wrap:wrap;}
-  .tag{font-size:9px;padding:2px 6px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
+  .tag{font-size:15px;padding:2px 6px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
   .score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
   .score-dot.pass{background:var(--green);}
   .score-dot.fail{background:var(--red);}
@@ -61,109 +61,113 @@
   #test-detail-left{}
   #test-detail-right{position:sticky;top:0;}
   @media(max-width:900px){#test-detail-inner{grid-template-columns:1fr;}}
-  .detail-back{background:none;border:none;color:var(--accent);font-family:inherit;font-size:12px;cursor:pointer;margin-bottom:16px;padding:0;}
-  .detail-name{font-size:16px;color:var(--text-bright);margin-bottom:6px;}
-  .detail-id{font-size:10px;color:var(--text-dim);margin-bottom:20px;}
+  .detail-back{background:none;border:none;color:var(--accent);font-family:inherit;font-size:15px;cursor:pointer;margin-bottom:16px;padding:0;}
+  .detail-name{font-size:19px;color:var(--text-bright);margin-bottom:6px;}
+  .detail-id{font-size:19px;color:var(--text-dim);margin-bottom:20px;}
   .section{margin-bottom:18px;}
-  .section-header{font-size:10px;color:var(--text-dim);letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;}
-  .prompt-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;max-height:200px;overflow-y:auto;font-size:12px;}
+  .section-header{font-size:19px;color:var(--text-dim);letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+  .prompt-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;max-height:200px;overflow-y:auto;font-size:15px;}
   .criteria-list{display:flex;flex-direction:column;gap:6px;}
   .criteria-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:flex-start;gap:10px;}
-  .criteria-weight{color:var(--text-dim);font-size:10px;min-width:50px;}
-  .criteria-text{color:var(--text);flex:1;font-size:12px;}
-  .run-btn{background:var(--accent);color:#000;font-family:inherit;font-size:13px;font-weight:700;padding:11px 28px;border:none;cursor:pointer;letter-spacing:1px;margin-bottom:18px;}
+  .criteria-weight{color:var(--text-dim);font-size:19px;min-width:50px;}
+  .criteria-text{color:var(--text);flex:1;font-size:15px;}
+  .run-btn{background:var(--accent);color:#000;font-family:inherit;font-size:19px;font-weight:700;padding:11px 28px;border:none;cursor:pointer;letter-spacing:1px;margin-bottom:18px;}
+  .action-btn{font-family:inherit;font-size:15px;font-weight:700;padding:9px 22px;border:none;cursor:pointer;letter-spacing:0.5px;height:40px;min-width:120px;}
+  .accent-btn{background:var(--accent);color:#000;}.accent-btn:hover{background:var(--accent2);}
+  .green-btn{background:var(--green);color:#000;}.green-btn:hover{opacity:0.85;}
+  .yellow-btn{background:none;border:1px solid var(--yellow);color:var(--yellow);}.yellow-btn:hover{background:var(--yellow);color:#000;}
   .run-btn:disabled{background:var(--border2);color:var(--text-dim);cursor:not-allowed;}
   .run-btn:not(:disabled):hover{background:var(--accent2);}
-  .response-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;min-height:80px;max-height:500px;overflow-y:auto;font-size:12px;}
+  .response-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;min-height:80px;max-height:500px;overflow-y:auto;font-size:15px;}
   .score-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
-  .score-btn{font-family:inherit;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--text);}
+  .score-btn{font-family:inherit;font-size:17px;padding:6px 14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--text);}
   .score-btn.selected.pass{background:var(--green);color:#000;border-color:var(--green);}
   .score-btn.selected.fail{background:var(--red);color:#fff;border-color:var(--red);}
   .score-btn.selected.partial{background:var(--yellow);color:#000;border-color:var(--yellow);}
-  .notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:12px;padding:10px;outline:none;resize:vertical;min-height:60px;}
-  .save-btn{background:var(--green);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;margin-top:10px;}
-  .status-msg{font-size:11px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+  .notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:15px;padding:10px;outline:none;resize:vertical;min-height:60px;}
+  .save-btn{background:var(--green);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;margin-top:10px;}
+  .status-msg{font-size:17px;color:var(--text-dim);margin-top:8px;min-height:16px;}
   .results-table{width:100%;border-collapse:collapse;}
-  .results-table th{background:var(--bg3);color:var(--text-dim);font-size:10px;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
-  .results-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;}
+  .results-table th{background:var(--bg3);color:var(--text-dim);font-size:19px;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .results-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:17px;}
   .results-table tr:hover td{background:var(--bg2);}
   .admin-section{margin-bottom:28px;}
-  .admin-section-title{font-size:12px;color:var(--accent);margin-bottom:12px;letter-spacing:1px;}
+  .admin-section-title{font-size:15px;color:var(--accent);margin-bottom:12px;letter-spacing:1px;}
   .input-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
-  .inline-input{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:12px;padding:8px 10px;outline:none;}
-  .btn{font-family:inherit;font-size:11px;padding:7px 14px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;}
+  .inline-input{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:15px;padding:8px 10px;outline:none;}
+  .btn{font-family:inherit;font-size:17px;padding:7px 14px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;}
   .btn:hover{border-color:var(--accent);color:var(--accent);}
   .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
   .btn.danger{border-color:var(--red);color:var(--red);}
   .btn.danger:hover{background:var(--red);color:#fff;}
   .token-list{display:flex;flex-direction:column;gap:6px;}
   .token-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .token-id{font-size:11px;color:var(--accent);flex:1;}
-  .token-label{font-size:10px;color:var(--text-dim);}
+  .token-id{font-size:17px;color:var(--accent);flex:1;}
+  .token-label{font-size:19px;color:var(--text-dim);}
   .unused{color:var(--green)}.used{color:var(--text-dim)}.revoked{color:var(--red);}
   .as-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
   .as-card{background:var(--bg3);border:1px solid var(--border);padding:10px;text-align:center;}
-  .as-label{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;}
-  .as-value{font-size:20px;font-weight:700;color:var(--accent);}
-  .as-grade{font-size:12px;font-weight:700;margin-top:2px;}
+  .as-label{font-size:15px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;}
+  .as-value{font-size:23px;font-weight:700;color:var(--accent);}
+  .as-grade{font-size:15px;font-weight:700;margin-top:2px;}
   .as-grade.PASS{color:var(--green);} .as-grade.PARTIAL{color:var(--yellow);} .as-grade.FAIL{color:var(--red);}
   .as-criteria{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
-  .as-criterion{background:var(--bg);border:1px solid var(--border);padding:6px 10px;display:flex;align-items:flex-start;gap:8px;font-size:11px;}
+  .as-criterion{background:var(--bg);border:1px solid var(--border);padding:6px 10px;display:flex;align-items:flex-start;gap:8px;font-size:17px;}
   .as-criterion.met{border-left:3px solid var(--green);}
   .as-criterion.unmet{border-left:3px solid var(--red);}
   .as-criterion.bonus{border-left:3px solid var(--yellow);}
-  .as-check{font-size:12px;min-width:14px;}
-  .as-note{color:var(--text-dim);font-size:10px;margin-top:2px;}
-  .as-summary{font-size:11px;color:var(--text-dim);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);}
+  .as-check{font-size:15px;min-width:14px;}
+  .as-note{color:var(--text-dim);font-size:19px;margin-top:2px;}
+  .as-summary{font-size:17px;color:var(--text-dim);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px;}
   .modal-overlay.active{display:flex;}
   .modal-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:900px;display:flex;flex-direction:column;}
   .modal-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);gap:12px;}
-  .modal-title{font-size:14px;color:var(--accent);flex:1;}
-  .modal-close{background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:16px;cursor:pointer;padding:0;}
+  .modal-title{font-size:17px;color:var(--accent);flex:1;}
+  .modal-close{background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:19px;cursor:pointer;padding:0;}
   .modal-body{padding:18px;overflow-y:auto;max-height:70vh;}
   .modal-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;}
-  .diff-view{font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+  .diff-view{font-family:'IBM Plex Mono',monospace;font-size:17px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
   .diff-add{background:#1a3a1a;color:#4caf50;}
   .diff-remove{background:#3a0a0a;color:#f44336;}
   .diff-same{color:var(--text-dim);}
-  .opt-analysis{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;font-size:12px;color:var(--text);margin-bottom:14px;line-height:1.6;}
+  .opt-analysis{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;font-size:15px;color:var(--text);margin-bottom:14px;line-height:1.6;}
   .opt-changes{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-  .opt-change{background:var(--bg);border:1px solid var(--border);padding:6px 12px;font-size:11px;}
-  .opt-change-type{display:inline-block;padding:1px 6px;font-size:9px;font-weight:700;margin-right:6px;}
+  .opt-change{background:var(--bg);border:1px solid var(--border);padding:6px 12px;font-size:17px;}
+  .opt-change-type{display:inline-block;padding:1px 6px;font-size:15px;font-weight:700;margin-right:6px;}
   .opt-change-type.add{background:#1a3a1a;color:#4caf50;}
   .opt-change-type.modify{background:#3a2e0a;color:#ffb300;}
   .opt-change-type.remove{background:#3a0a0a;color:#f44336;}
-  .btn-accept{background:var(--green);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
-  .btn-reject{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:12px;padding:8px 16px;cursor:pointer;}
-  .btn-rerun{background:var(--accent);color:#000;font-family:inherit;font-size:12px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
+  .btn-accept{background:var(--green);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
+  .btn-reject{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:15px;padding:8px 16px;cursor:pointer;}
+  .btn-rerun{background:var(--accent);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .hidden{display:none!important;}
-  .mcp-note{background:var(--bg3);border:1px solid var(--border);padding:10px 14px;font-size:11px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;}
+  .mcp-note{background:var(--bg3);border:1px solid var(--border);padding:10px 14px;font-size:17px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;}
   .mcp-note strong{color:var(--yellow);}
 
   .score-card {
     background:var(--bg2); border:1px solid var(--border); padding:12px;
     text-align:center;
   }
-  .sc-label { font-size:9px; color:var(--text-dim); letter-spacing:1px; margin-bottom:6px; }
-  .sc-value { font-size:24px; font-weight:700; color:var(--accent); }
-  .sc-max { font-size:10px; color:var(--text-dim); }
-  .sc-grade { font-size:12px; font-weight:700; }
+  .sc-label { font-size:15px; color:var(--text-dim); letter-spacing:1px; margin-bottom:6px; }
+  .sc-value { font-size:27px; font-weight:700; color:var(--accent); }
+  .sc-max { font-size:19px; color:var(--text-dim); }
+  .sc-grade { font-size:15px; font-weight:700; }
   .sc-grade.PASS { color:var(--green); }
   .sc-grade.PARTIAL { color:var(--yellow); }
   .sc-grade.FAIL { color:var(--red); }
   .diff-easy   { background:#1a3a1a; color:#4caf50; border:1px solid #2d5a2d; }
   .diff-medium { background:#3a2e0a; color:#ffb300; border:1px solid #5a4a0d; }
   .diff-hard   { background:#3a0a0a; color:#f44336; border:1px solid #5a1a1a; }
-  .diff-badge  { display:inline-block; font-size:9px; padding:2px 7px; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
+  .diff-badge  { display:inline-block; font-size:15px; padding:2px 7px; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
   .fault-card { background:var(--bg2); border:1px solid var(--border); padding:14px; cursor:pointer; transition:border-color 0.15s; }
   .fault-card:hover { border-color:var(--accent); }
   .fault-card.has-score { border-left:3px solid var(--green); }
-  .fault-card-id { font-size:10px; color:var(--text-dim); margin-bottom:5px; }
-  .fault-card-name { font-size:12px; color:var(--text-bright); margin-bottom:6px; }
-  .fault-card-device { font-size:10px; color:var(--accent); }
+  .fault-card-id { font-size:19px; color:var(--text-dim); margin-bottom:5px; }
+  .fault-card-name { font-size:15px; color:var(--text-bright); margin-bottom:6px; }
+  .fault-card-device { font-size:19px; color:var(--accent); }
 
 </style>
 </head>
@@ -173,11 +177,11 @@
   <div class="auth-box">
     <div class="auth-title">◈ NETOPS RUNNER</div>
     <div class="auth-sub">LLM Network Engineering Test Platform</div>
-    <div class="auth-label">INVITE TOKEN</div>
-    <input class="auth-input" id="token-input" type="text" placeholder="NETOPS-XXXX-XXXX" autocomplete="off"/>
-    <div class="auth-label">DISPLAY NAME <span style="color:var(--text-dim)">(new users only)</span></div>
-    <input class="auth-input" id="name-input" type="text" placeholder="Your name"/>
-    <button class="auth-btn" onclick="doAuth()">ENTER</button>
+    <div class="auth-label">USERNAME</div>
+    <input class="auth-input" id="username-input" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('password-input').focus()"/>
+    <div class="auth-label">PASSWORD</div>
+    <input class="auth-input" id="password-input" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()"/>
+    <button class="auth-btn" onclick="doAuth()">SIGN IN</button>
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
@@ -243,8 +247,15 @@
       <!-- Phase 2: Run LLM -->
       <div class="section hidden" id="phase-run">
         <div class="section-header">▸ PHASE 2 — RUN LLM DIAGNOSIS</div>
-        <div style="color:var(--green);font-size:11px;margin-bottom:12px">✓ Fault injected. Lab is broken. LLM will now diagnose using live MCP tools.</div>
-        <button class="run-btn" id="run-llm-btn" onclick="runLLM()">▶ RUN CLAUDE DIAGNOSIS</button>
+        <div style="color:var(--green);font-size:17px;margin-bottom:12px">✓ Fault injected. Lab is broken. LLM will now diagnose using live MCP tools.</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="model-select" onchange="updateDiagBtn()" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:4px;font-size:14px;cursor:pointer">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-opus-4-6">Claude Opus 4.6</option>
+            <option value="qwen2.5:7b">Qwen 2.5 7B (Ollama)</option>
+          </select>
+          <button class="run-btn" id="run-llm-btn" onclick="runLLM()">▶ RUN CLAUDE DIAGNOSIS</button>
+        </div>
         <div class="status-msg" id="run-status"></div>
       </div>
 
@@ -253,7 +264,9 @@
         <div class="section-header">▸ PHASE 3 — RESULTS & SCORING</div>
 
         <!-- Score Dashboard -->
-        <div id="score-dashboard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+          <div>
+            <div id="score-dashboard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
           <div class="score-card" id="sc-total">
             <div class="sc-label">TOTAL</div>
             <div class="sc-value" id="sc-total-val">—</div>
@@ -281,22 +294,22 @@
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-header">▸ LLM RESPONSE</div>
-          <div class="response-box" id="live-response-box"></div>
+            <div class="section">
+              <div class="section-header">▸ EXPECTED ANSWER</div>
+              <div class="mcp-note" id="expected-answer"></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+              <button class="action-btn accent-btn" onclick="runLLM()">▶ RE-RUN</button>
+              <button class="action-btn green-btn" onclick="restoreLab()">🔄 RESTORE LAB</button>
+              <button class="action-btn yellow-btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none">◈ OPTIMIZE SKILL</button>
+            </div>
+            <div class="status-msg" id="restore-status"></div>
+          </div>
+          <div class="section" style="margin:0">
+            <div class="section-header">▸ LLM RESPONSE</div>
+            <div class="response-box" id="live-response-box" style="max-height:65vh;overflow-y:auto"></div>
+          </div>
         </div>
-
-        <div class="section">
-          <div class="section-header">▸ EXPECTED ANSWER</div>
-          <div class="mcp-note" id="expected-answer"></div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-          <button class="run-btn" onclick="runLLM()" style="font-size:11px;padding:8px 18px">▶ RE-RUN</button>
-          <button class="save-btn" onclick="restoreLab()">🔄 RESTORE LAB</button>
-          <button class="btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none;border-color:var(--yellow);color:var(--yellow)">◈ OPTIMIZE SKILL</button>
-        </div>
-        <div class="status-msg" id="restore-status"></div>
       </div>
     </div>
 
@@ -316,7 +329,7 @@
     <button class="detail-back" onclick="backToTests()">← Back</button>
     <div class="detail-name" id="detail-name"></div>
     <div class="detail-id" id="detail-id"></div>
-    <div id="run-error-msg" style="display:none;color:var(--red);background:var(--bg2);border:1px solid var(--red);padding:10px 14px;font-size:12px;margin-bottom:14px"></div>
+    <div id="run-error-msg" style="display:none;color:var(--red);background:var(--bg2);border:1px solid var(--red);padding:10px 14px;font-size:15px;margin-bottom:14px"></div>
     <div id="test-detail-inner">
       <!-- LEFT: test info -->
       <div id="test-detail-left">
@@ -342,7 +355,7 @@
         </div>
         <div class="section" id="score-section" style="display:none">
           <div class="section-header">▸ AUTO-SCORE</div>
-          <div id="as-loading" style="font-size:11px;color:var(--text-dim)"><span class="spinner"></span> Scoring with Claude Haiku...</div>
+          <div id="as-loading" style="font-size:17px;color:var(--text-dim)"><span class="spinner"></span> Scoring with Claude Haiku...</div>
           <div id="as-result" style="display:none">
             <div class="as-dashboard">
               <div class="as-card"><div class="as-label">GRADE</div><div class="as-grade" id="as-grade-val">—</div></div>
@@ -363,7 +376,7 @@
           <button class="save-btn" onclick="saveResult()">SAVE RESULT</button>
           <div class="status-msg" id="status-msg"></div>
         </div>
-        <div id="right-placeholder" style="color:var(--text-dim);font-size:11px;padding:20px 0;display:block">
+        <div id="right-placeholder" style="color:var(--text-dim);font-size:17px;padding:20px 0;display:block">
           ◈ Run the test to see the LLM response here
         </div>
       </div>
@@ -382,35 +395,38 @@
   <!-- Admin Tab -->
   <div id="tab-content-admin" class="content hidden">
     <div class="admin-section">
-      <div class="admin-section-title">CREATE INVITE TOKENS</div>
+      <div class="admin-section-title">CREATE USER</div>
       <div class="input-row">
-        <input class="inline-input" id="token-label" placeholder="Label" style="width:200px"/>
-        <input class="inline-input" id="token-count" type="number" value="1" min="1" max="20" style="width:60px"/>
-        <button class="btn primary" onclick="createTokens()">CREATE</button>
+        <input class="inline-input" id="new-username" placeholder="Username" style="width:160px" autocomplete="off"/>
+        <span style="color:var(--text-dim);font-size:12px;align-self:center">Default password: <code>changeme</code></span>
+        <select id="new-role" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:8px 10px;font-family:inherit;font-size:14px">
+          <option value="user" selected>User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button class="btn primary" onclick="createUser()">CREATE</button>
       </div>
-      <div id="new-tokens-out" style="color:var(--green);font-size:11px;margin-bottom:10px"></div>
-      <div class="token-list" id="token-list">Loading...</div>
+      <div id="create-user-out" style="font-size:13px;min-height:16px;margin-bottom:10px"></div>
     </div>
     <div class="admin-section">
       <div class="admin-section-title">USERS</div>
       <table class="results-table">
-        <thead><tr><th>NAME</th><th>ADMIN</th><th>RESULTS</th><th>LAST ACTIVE</th><th></th></tr></thead>
+        <thead><tr><th>USERNAME</th><th>ROLE</th><th>RUNS</th><th>LAST RUN</th><th>CREATED</th><th></th></tr></thead>
         <tbody id="users-body"></tbody>
       </table>
     </div>
     <div class="admin-section">
       <div class="admin-section-title">SKILLS REPOSITORY</div>
-      <div id="skills-repo-status" style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
+      <div id="skills-repo-status" style="font-size:17px;color:var(--text-dim);margin-bottom:10px">
         <span class="spinner"></span> Checking...
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn primary" onclick="syncSkills()" id="btn-sync-skills">↓ SYNC FROM REPO</button>
-        <div id="sync-status" style="font-size:11px;color:var(--text-dim)"></div>
+        <div id="sync-status" style="font-size:17px;color:var(--text-dim)"></div>
       </div>
     </div>
     <div class="admin-section">
       <div class="admin-section-title">SERVER</div>
-      <div style="color:var(--text-dim);font-size:11px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
+      <div style="color:var(--text-dim);font-size:17px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
       <button class="btn" onclick="exportData()">EXPORT DB</button>
     </div>
   </div>
@@ -430,65 +446,106 @@
       <button class="btn-accept" id="btn-accept-skill" onclick="acceptSkillPatch()">✓ APPLY PATCH</button>
       <button class="btn-rerun" id="btn-rerun-after-patch" style="display:none" onclick="rerunAfterPatch()">▶ RE-RUN TEST</button>
       <button class="btn-reject" onclick="closeOptimizeModal()">✕ DISCARD</button>
-      <div style="flex:1;font-size:11px;color:var(--text-dim)" id="optimize-status"></div>
+      <div style="flex:1;font-size:17px;color:var(--text-dim)" id="optimize-status"></div>
     </div>
   </div>
 </div>
 
-<!-- Admin Password Modal -->
-<div id="admin-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:1000">
-  <div style="background:var(--bg2);border:1px solid var(--border);padding:32px;width:360px">
-    <div style="font-size:14px;color:var(--accent);margin-bottom:6px">ADMIN PASSWORD</div>
-    <div style="font-size:11px;color:var(--text-dim);margin-bottom:18px">Enter admin password to continue</div>
-    <input id="admin-pw-input" type="password" class="auth-input" placeholder="Password" onkeydown="if(event.key==='Enter')submitAdminPw()"/>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="auth-btn" onclick="submitAdminPw()" style="flex:1">UNLOCK</button>
-      <button class="btn" onclick="document.getElementById('admin-pw-modal').style.display='none'" style="padding:11px 16px">✕</button>
-    </div>
-  </div>
-</div>
+<!-- admin password modal removed - using cookie session auth -->
 
 <script>
 const API='/api';
 let state={
-  sessionId:localStorage.getItem('netops_sid')||'',user:null,
+  user:null,
   currentTest:null,currentTestSet:'skills',currentScore:null,currentResponse:null,
   results:{},activeFilters:{skills:''}
 };
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){return new Date(ts).toLocaleDateString()+' '+new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function headers(){return{'Content-Type':'application/json','X-Session-Id':state.sessionId};}
-async function doAuth(){console.log("doAuth called");
-  const token=document.getElementById('token-input').value.trim();
-  const name=document.getElementById('name-input').value.trim();
+function headers(){return{'Content-Type':'application/json'};}
+function fetchOpts(extra){return{headers:headers(),credentials:'include',...extra};}
+async function doAuth(){
+  const username=document.getElementById('username-input').value.trim();
+  const password=document.getElementById('password-input').value;
   document.getElementById('auth-error').textContent='';
-  if(!token){document.getElementById('auth-error').textContent='Enter your invite token';return;}
+  if(!username||!password){document.getElementById('auth-error').textContent='Username and password required';return;}
   try{
-    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/auth/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_id:token,display_name:name})});
+    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({username,password})});
     const d=await r.json();
-    if(!r.ok){document.getElementById('auth-error').textContent=d.error||'Auth failed';return;}
-    state.sessionId=d.session_id;state.user=d.user;
-    localStorage.setItem('netops_sid',d.session_id);showApp();
+    if(!r.ok){document.getElementById('auth-error').textContent=d.error||'Login failed';return;}
+    state.user={username:d.username,role:d.role,is_admin:d.role==='admin',display_name:d.username,must_change_password:d.must_change_password};
+    if(d.must_change_password){showForceChangePassword();return;}
+    showApp();
   }catch(e){document.getElementById('auth-error').textContent='Error: '+e.message;}
 }
-document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
-document.getElementById('name-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
 async function doLogout(){
-  try{await fetch(`${API}/auth/logout`,{method:'POST',headers:headers()});}catch{}
-  localStorage.removeItem('netops_sid');location.reload();
+  try{await fetch(`${API}/auth/logout`,{method:'POST',credentials:'include'});}catch{}
+  location.reload();
 }
 async function init(){
-  if(!state.sessionId)return;
   try{
-    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/me`,{headers:headers()});
-    if(!r.ok){localStorage.removeItem('netops_sid');return;}
-    state.user=await r.json();showApp();
+    const r=await fetch(`${API}/auth/status`,{credentials:'include'});
+    const d=await r.json();
+    if(!d.authenticated)return;
+    state.user={username:d.username,role:d.role,is_admin:d.role==='admin',display_name:d.username,must_change_password:d.must_change_password};
+    if(d.must_change_password){showForceChangePassword();return;}
+    showApp();
   }catch{}
 }
+function showForceChangePassword(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  let fc = document.getElementById('force-change-screen');
+  if (!fc) {
+    fc = document.createElement('div');
+    fc.id = 'force-change-screen';
+    fc.style.cssText = 'position:fixed;inset:0;background:var(--bg1);display:flex;align-items:center;justify-content:center;z-index:9999';
+    fc.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--yellow);border-radius:8px;padding:40px;min-width:340px;max-width:420px">
+        <div style="color:var(--yellow);font-size:13px;letter-spacing:2px;font-weight:700;margin-bottom:8px">ACTION REQUIRED</div>
+        <div style="color:var(--text-bright);font-size:20px;font-weight:700;margin-bottom:8px">Change Your Password</div>
+        <div style="color:var(--text-dim);font-size:13px;margin-bottom:24px">Your account was set up with a default password. You must change it before continuing.</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input id="fc-new-pw" type="password" placeholder="New password" autocomplete="new-password"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 14px;font-family:inherit;font-size:14px;width:100%;box-sizing:border-box"/>
+          <input id="fc-confirm-pw" type="password" placeholder="Confirm password" autocomplete="new-password"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 14px;font-family:inherit;font-size:14px;width:100%;box-sizing:border-box"/>
+          <div style="color:var(--text-dim);font-size:11px">Min 10 characters, upper + lower + number</div>
+          <div id="fc-error" style="color:var(--red);font-size:13px;display:none"></div>
+          <button onclick="submitForceChangePassword()"
+            style="background:var(--accent);color:#000;border:none;padding:11px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">
+            SET PASSWORD & CONTINUE
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(fc);
+  }
+  fc.style.display='flex';
+}
+
+async function submitForceChangePassword(){
+  const pw  = document.getElementById('fc-new-pw').value;
+  const pw2 = document.getElementById('fc-confirm-pw').value;
+  const err = document.getElementById('fc-error');
+  err.style.display='none';
+  if(pw !== pw2){ err.textContent='Passwords do not match'; err.style.display='block'; return; }
+  if(pw.length < 10 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)){
+    err.textContent='Min 10 characters, upper + lower + number'; err.style.display='block'; return; }
+  try{
+    const r = await fetch(API+'/auth/change-password',{method:'POST',headers:headers(),credentials:'include',
+      body:JSON.stringify({new_password:pw})});
+    const d = await r.json();
+    if(!r.ok){err.textContent=d.error||'Error changing password';err.style.display='block';return;}
+    document.getElementById('force-change-screen').style.display='none';
+    state.user.must_change_password=false;
+    showApp();
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+}
+
 function showApp(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  document.getElementById('topbar-user').textContent=state.user.display_name;
+  document.getElementById('topbar-user').textContent=state.user.username+' ['+state.user.role+']';
   if(state.user.is_admin)document.getElementById('tab-admin').classList.remove('hidden');
   document.getElementById('tab-live').classList.add('active');
   document.getElementById('tab-content-live').classList.remove('hidden');
@@ -497,7 +554,8 @@ function showApp(){
 }
 async function loadResults(){
   try{
-    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/results`,{headers:headers()});
+    const r=await fetch(`${API}/results`,{headers:headers(),credentials:'include'});
+    if(!r.ok) return; // 401 on refresh before re-auth — silent fail is correct
     const rows=await r.json();state.results={};
     rows.forEach(row=>{state.results[row.test_id]=row;});
   }catch{}
@@ -569,7 +627,7 @@ async function runTest(){
   document.getElementById('run-error-msg').style.display='none';
   document.getElementById('response-section').style.display='none';document.getElementById('score-section').style.display='none';
   try{
-    const r=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),
+    const r=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),credentials:'include',
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1024,system:t.system,messages:[{role:'user',content:t.user}]})});
     const data=await r.json();
     if(!r.ok || data.type==='error'){
@@ -642,7 +700,7 @@ function setScore(score,updateUI=true){
 async function saveResult(){
   if(!state.currentScore){document.getElementById('status-msg').textContent='Select a score first';return;}
   try{
-    console.log("Fetching:",`${API}/auth/join`);const r=await fetch(`${API}/results`,{method:'POST',headers:headers(),body:JSON.stringify({
+    const r=await fetch(`${API}/results`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({
       test_id:state.currentTest.id,score:state.currentScore,
       notes:document.getElementById('notes-input').value.trim(),
       criteria:state.currentTest.criteria,llm_response:state.currentResponse
@@ -679,60 +737,58 @@ async function loadResultsTab(){
   </tr>`).join('');
 }
 async function loadAdminData(){
-  ensureAdminPw(async function(pw){
-    try{
-      const tr=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1,messages:[{role:'user',content:'hi'}]})});
-      document.getElementById('apikey-status').textContent=tr.status===503?'✗ Not set':'✓ Configured';
-      document.getElementById('apikey-status').style.color=tr.status===503?'var(--red)':'var(--green)';
-    }catch{}
-    try{
-      const r=await fetch(`${API}/admin/tokens`,{headers:{...headers(),'X-Admin-Password':pw}});
-      if(r.status===403){clearAdminPw();document.getElementById('token-list').textContent='Wrong password';return;}
-      const tokens=await r.json();
-      document.getElementById('token-list').innerHTML=tokens.map(t=>`<div class="token-item">
-        <span class="token-id">${escHtml(t.id)}</span><span class="token-label">${escHtml(t.label)}</span>
-        <span class="token-status ${t.revoked?'revoked':t.used_by?'used':'unused'}">${t.revoked?'REVOKED':t.used_by?'USED':'AVAILABLE'}</span>
-        ${!t.revoked?`<button class="btn danger" onclick="revokeToken('${t.id}')">REVOKE</button>`:''}
-      </div>`).join('');
-    }catch(e){document.getElementById('token-list').textContent='Error: '+e.message;}
-    try{
-      const r=await fetch(`${API}/admin/users`,{headers:{...headers(),'X-Admin-Password':pw}});
-      const users=await r.json();
-      document.getElementById('users-body').innerHTML=users.map(u=>`<tr>
-        <td>${escHtml(u.display_name)}</td><td>${u.is_admin?'✓':'—'}</td><td>${u.result_count}</td>
-        <td>${u.last_active?fmtDate(u.last_active):'Never'}</td>
-        <td><button class="btn danger" onclick="deleteUser('${u.id}','${escHtml(u.display_name)}')">DELETE</button></td>
-      </tr>`).join('');
-    }catch{}
-  });
+  try{
+    const tr=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1,messages:[{role:'user',content:'hi'}]})});
+    document.getElementById('apikey-status').textContent=tr.status===503?'✗ Not set':'✓ Configured';
+    document.getElementById('apikey-status').style.color=tr.status===503?'var(--red)':'var(--green)';
+  }catch{}
+  try{
+    const r=await fetch(`${API}/admin/users`,{headers:headers(),credentials:'include'});
+    if(!r.ok){document.getElementById('users-body').innerHTML='<tr><td colspan=6 style="color:var(--red)">Admin access required</td></tr>';return;}
+    const users=await r.json();
+    document.getElementById('users-body').innerHTML=users.map(u=>`<tr>
+      <td>${escHtml(u.username)}</td>
+      <td><select onchange="updateRole('${u.id}',this.value)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:3px 6px;font-size:12px;font-family:inherit">
+        ${['user','admin'].map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
+      </select></td>
+      <td>${u.result_count||0}</td>
+      <td>${u.last_run?fmtDate(u.last_run):'Never'}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn" onclick="resetPw('${u.id}','${escHtml(u.username)}')" style="font-size:11px;padding:3px 8px">RESET PW</button>
+        <button class="btn danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')" style="font-size:11px;padding:3px 8px">DELETE</button>
+      </td>
+    </tr>`).join('');
+  }catch(e){console.error(e);}
 }
-function getAdminPw(){return localStorage.getItem('netops_adminpw')||'';}
-function ensureAdminPw(cb){
-  const pw=localStorage.getItem('netops_adminpw');
-  if(pw){cb(pw);return;}
-  document.getElementById('admin-pw-modal').style.display='flex';
-  document.getElementById('admin-pw-input').value='';
-  document.getElementById('admin-pw-input').focus();
-  window._adminPwCb=cb;
+async function createUser(){
+  const username=document.getElementById('new-username').value.trim();
+  const password='';
+  const role=document.getElementById('new-role').value;
+  const out=document.getElementById('create-user-out');
+  if(!username){out.textContent='Username required';out.style.color='var(--red)';return;}
+  const r=await fetch(`${API}/admin/users`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({username,password,role})});
+  const d=await r.json();
+  if(!r.ok){out.textContent='Error: '+d.error;out.style.color='var(--red)';}
+  else{out.textContent='✓ Created: '+d.username+' ('+d.role+')';out.style.color='var(--green)';
+    document.getElementById('new-username').value='';document.getElementById('new-password').value='';
+    loadAdminData();}
 }
-function submitAdminPw(){
-  const pw=document.getElementById('admin-pw-input').value.trim();
+async function updateRole(id,role){
+  await fetch(`${API}/admin/users/${id}/role`,{method:'PATCH',headers:headers(),credentials:'include',body:JSON.stringify({role})});
+}
+async function resetPw(id,username){
+  const pw=prompt('New password for '+username+' (min 10 chars, upper+lower+number):');
   if(!pw)return;
-  localStorage.setItem('netops_adminpw',pw);
-  document.getElementById('admin-pw-modal').style.display='none';
-  if(window._adminPwCb){window._adminPwCb(pw);window._adminPwCb=null;}
+  const r=await fetch(`${API}/admin/users/${id}/password`,{method:'PATCH',headers:headers(),credentials:'include',body:JSON.stringify({new_password:pw})});
+  const d=await r.json();
+  alert(r.ok?'✓ Password reset':'Error: '+d.error);
 }
-function clearAdminPw(){localStorage.removeItem('netops_adminpw');}
-async function createTokens(){
-  const label=document.getElementById('token-label').value.trim();const count=parseInt(document.getElementById('token-count').value)||1;
-  if(!label){alert('Enter label');return;}
-  const pw=getAdminPw();if(!pw){loadAdminData();return;}
-  const r=await fetch(`${API}/admin/tokens`,{method:'POST',headers:{...headers(),'X-Admin-Password':pw},body:JSON.stringify({label,count})});
-  const d=await r.json();if(!r.ok){alert(d.error);return;}
-  document.getElementById('new-tokens-out').textContent='Created: '+d.created.join(', ');loadAdminData();
+async function deleteUser(id,name){
+  if(!confirm('Delete user '+name+'? This removes all their runs and results.'))return;
+  await fetch(`${API}/admin/users/${id}`,{method:'DELETE',headers:headers(),credentials:'include'});
+  loadAdminData();
 }
-async function revokeToken(id){if(!confirm('Revoke '+id+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/tokens/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
-async function deleteUser(id,name){if(!confirm('Delete '+name+'?'))return;const pw=getAdminPw();if(!pw)return;await fetch(`${API}/admin/users/${id}`,{method:'DELETE',headers:{...headers(),'X-Admin-Password':pw}});loadAdminData();}
 function exportData(){window.open(`${API}/admin/export`,'_blank');}
 // ── Skill Optimizer ────────────────────────────────────────────────────────
 let optimizeState = { patch: null, skillName: null, runId: null };
@@ -742,6 +798,15 @@ async function openOptimizeModal() {
   if (!runId) return;
   document.getElementById('optimize-modal').classList.add('active');
   document.getElementById('optimize-modal-footer').style.display = 'none';
+  // Reset title and status from any previous patch session
+  const mt = document.getElementById('optimize-modal').querySelector('.modal-title');
+  if (mt) { mt.textContent = '◈ SKILL OPTIMIZER'; mt.style.color = ''; }
+  const os = document.getElementById('optimize-status');
+  if (os) { os.textContent = ''; os.style.color = ''; }
+  const rerunBtn = document.getElementById('btn-rerun-after-patch');
+  if (rerunBtn) rerunBtn.style.display = 'none';
+  const acceptBtn = document.getElementById('btn-accept-skill');
+  if (acceptBtn) { acceptBtn.disabled = false; acceptBtn.textContent = '✓ APPLY PATCH'; }
   document.getElementById('optimize-modal-body').innerHTML =
     '<div style="color:var(--text-dim);font-size:12px"><span class="spinner"></span> Analyzing failure and generating skill improvements...</div>';
   try {
@@ -819,6 +884,9 @@ async function acceptSkillPatch() {
     document.getElementById('optimize-status').textContent = `Skill "${optimizeState.skillName}" updated${repoMsg}`;
     document.getElementById('optimize-status').style.color = 'var(--green)';
     document.getElementById('btn-rerun-after-patch').style.display = 'block';
+    const mt=document.getElementById("optimize-modal").querySelector(".modal-title");
+    mt.textContent="\u2713 SKILL PATCHED \u2014 Click RE-RUN TEST to verify fix";
+    mt.style.color="var(--green)";
   } catch(e) {
     document.getElementById('optimize-status').textContent = 'Error: ' + (e?.message || String(e));
     document.getElementById('optimize-status').style.color = 'var(--red)';
@@ -827,8 +895,42 @@ async function acceptSkillPatch() {
 }
 
 async function rerunAfterPatch() {
+  // Close modal and go straight through inject → run with fresh skill from disk
+  const faultId = liveState.currentFault?.id;
   closeOptimizeModal();
-  await runLLM();
+  if (!faultId) return;
+
+  // Step 1: Re-inject the fault (lab may have been restored)
+  document.getElementById('phase-inject').classList.remove('hidden');
+  document.getElementById('phase-run').classList.add('hidden');
+  document.getElementById('phase-results').classList.add('hidden');
+
+  const injectBtn = document.getElementById('inject-btn');
+  injectBtn.disabled = true;
+  injectBtn.innerHTML = '<span class=spinner></span> Re-injecting fault...';
+  document.getElementById('inject-status').textContent = '✓ Skill updated — re-injecting fault with patched skill...';
+
+  try {
+    const ir = await fetch(`${API}/live/inject`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ fault_id: faultId })
+    });
+    const id = await ir.json();
+    if (!ir.ok) throw new Error(id.error);
+    liveState.currentRunId = id.run_id;
+
+    // Step 2: Immediately run LLM with fresh skill content from disk
+    document.getElementById('phase-inject').classList.add('hidden');
+    document.getElementById('phase-run').classList.remove('hidden');
+    const rerunModel = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
+    const rerunLabel = rerunModel.startsWith('claude') ? 'Claude' : rerunModel.split(':')[0].toUpperCase();
+    document.getElementById('run-status').textContent = `✓ Fault re-injected — running ${rerunLabel} with updated skill...`;
+    await runLLM();
+  } catch(e) {
+    document.getElementById('inject-status').textContent = 'Re-inject error: ' + e.message;
+    injectBtn.disabled = false;
+    injectBtn.textContent = '⚡ INJECT FAULT AGAIN';
+  }
 }
 
 async function loadSkillsStatus() {
@@ -878,8 +980,6 @@ function closeOptimizeModal() {
   document.getElementById('optimize-modal').classList.remove('active');
   optimizeState = { patch: null, skillName: null, runId: null };
 }
-
-init();
 
 const SKILL_TESTS = [
 
@@ -1268,6 +1368,121 @@ const SKILL_TESTS = [
 
 
 // ── LIVE LAB TEST STATE ──────────────────────────────────────────────────────
+// ── loadFaults: fetch fault list from backend and render cards ──────────────
+async function loadFaults() {
+  try {
+    const r = await fetch(API+'/faults', {headers:headers(), credentials:'include'});
+    if (!r.ok) return;
+    liveState.faults = await r.json();
+    renderFaultGrid();
+  } catch(e) { console.error('loadFaults:', e); }
+}
+
+function renderFaultGrid() {
+  const grid = document.getElementById('fault-grid');
+  const badge = document.getElementById('live-score-badge');
+  if (!grid) return;
+  const faults = liveState.faults;
+  if (!faults.length) {
+    grid.innerHTML = '<div style="color:var(--text-dim);padding:20px">No faults loaded. Check clab host connectivity.</div>';
+    return;
+  }
+  badge.textContent = faults.length + ' faults';
+  const diffColor = {easy:'#68d391', medium:'#ecc94b', hard:'#fc8181'};
+  grid.innerHTML = faults.map(f => `
+    <div class="test-card" onclick="selectFault('${f.id}')" style="cursor:pointer">
+      <div class="test-card-id">${escHtml(f.id)}</div>
+      <div class="test-card-name">${escHtml(f.title||f.id)}</div>
+      <div class="test-card-tags">
+        <span class="tag" style="border-color:${diffColor[f.difficulty]||'#718096'};color:${diffColor[f.difficulty]||'#718096'}">${f.difficulty||'?'}</span>
+        <span class="tag">${escHtml(f.skill||'')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectFault(id) {
+  const f = liveState.faults.find(x => x.id === id);
+  if (!f) return;
+  liveState.currentFault = f;
+  liveState.currentRunId = null;
+
+  // Show the run panel, hide fault grid
+  document.getElementById('fault-grid').style.display = 'none';
+  const panel = document.getElementById('live-run-panel');
+  if (panel) panel.style.display = 'block';
+
+  // Populate panel fields
+  const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val||'—'; };
+  setEl('live-fault-title', f.title || f.id);
+  setEl('live-fault-meta', f.id + ' · ' + (f.difficulty||'') + ' · ' + (f.vendor||'') + ' · device: ' + (f.device||''));
+  setEl('live-device', f.device || '—');
+  setEl('live-symptom', f.symptom || '—');
+  setEl('live-skill', f.skill || '—');
+  setEl('live-optimal', (f.optimal_tool_sequence||[]).join(' → ') || '—');
+
+  // Reset phases
+  ['phase-inject','phase-run','phase-results'].forEach((ph,i) => {
+    const el = document.getElementById(ph);
+    if (!el) return;
+    if (i===0) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+  setEl('inject-status', '');
+  setEl('run-status', '');
+  setEl('restore-status', '');
+
+  // Reset inject button
+  const injBtn = document.getElementById('inject-btn');
+  if (injBtn) { injBtn.disabled=false; injBtn.textContent='⚡ INJECT FAULT INTO LAB'; }
+}
+
+async function injectFault() {
+  const f = liveState.currentFault;
+  if (!f) return;
+  const btn = document.getElementById('inject-btn');
+  const status = document.getElementById('inject-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Injecting...';
+  if (status) status.textContent = '';
+
+  try {
+    const r = await fetch(API+'/live/inject', {
+      method:'POST', headers:headers(), credentials:'include',
+      body: JSON.stringify({ fault_id: f.id })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Inject failed');
+
+    liveState.currentRunId = d.run_id;
+
+    // Show output
+    if (status) status.textContent = d.output?.split('\n').slice(-2).join(' ') || 'Injected';
+    btn.textContent = '✓ Injected';
+
+    // Advance to run phase
+    const phaseInject = document.getElementById('phase-inject');
+    const phaseRun    = document.getElementById('phase-run');
+    if (phaseInject) phaseInject.classList.add('hidden');
+    if (phaseRun)    phaseRun.classList.remove('hidden');
+
+    // Pre-load skill and update button label
+    updateDiagBtn();
+  } catch(e) {
+    if (status) status.textContent = 'Error: ' + (e.message || String(e));
+    btn.disabled = false;
+    btn.textContent = '⚡ INJECT FAULT INTO LAB';
+  }
+}
+
+function closeLivePanel() {
+  document.getElementById('fault-grid').style.display = '';
+  const panel = document.getElementById('live-run-panel');
+  if (panel) panel.style.display = 'none';
+  liveState.currentFault = null;
+  liveState.currentRunId = null;
+}
+
 let liveState = {
   faults: [],
   currentFault: null,
@@ -1276,422 +1491,90 @@ let liveState = {
 };
 
 // Load skill content from the skills-exp definitions (mapped by skill name)
-const SKILL_CONTENT_MAP = {
-  'arista-bgp-troubleshooter': `# Arista EOS BGP Troubleshooter
-
-## Workflow
-1. show bgp summary — check all peer states
-2. show bgp neighbors <IP> — per-peer detail, look for Last error, state
-3. MD5: Active/Idle loop = auth mismatch — verify neighbor <IP> password
-4. show bgp neighbors <IP> advertised-routes / received-routes
-5. show route-map — verify policy
-
-## EOS Pitfalls
-- maximum-paths not set = only 1 ECMP path
-- service routing protocols model multi-agent required for EVPN/SR
-- graceful-restart mismatch causes resets
-
-## Output Format
-### BGP Findings — <device>
-**Status**: Healthy | Degraded | Down
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific command output
-**Recommended Actions**: [ ] fix — READ-ONLY or CONFIG CHANGE`,
-
-  'arista-evpn-troubleshooter': `# Arista EOS EVPN Troubleshooter
-
-## Workflow
-1. show bgp evpn summary — overlay session state
-2. show bgp evpn route-type mac-ip — Type-2 routes
-3. show bgp evpn route-type imet — Type-3 BUM routes
-4. show vxlan address-table — MAC-to-VTEP mappings
-5. show bgp evpn instance — RD/RT per instance
-
-## EOS Pitfalls
-- Missing redistribute learned under MAC-VRF = local MACs not advertised
-- vxlan virtual-router encapsulation mac-address mlag-system-id required on MLAG
-- service routing protocols model multi-agent required
-
-## Output Format
-### EVPN Findings — <device>
-**Status**: Healthy | Degraded | Down
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific command output
-**Recommended Actions**: [ ] fix`,
-
-  'arista-ospf-troubleshooter': `# Arista EOS OSPF Troubleshooter
-
-## Workflow  
-1. show ip ospf neighbor — adjacency states
-2. show ip ospf interface <intf> — timers, area, MTU, auth
-3. ExStart = MTU mismatch — check ip ospf mtu or use ip ospf mtu-ignore
-4. show ip ospf database — LSDB
-5. show ip route ospf — installed routes
-
-## EOS Pitfalls
-- ip ospf area under interface overrides router ospf area
-- Passive interface blocks adjacency
-- Multi-instance: instance tag must match
-
-## Output Format
-### OSPF Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'arista-isis-troubleshooter': `# Arista EOS IS-IS Troubleshooter
-
-## Workflow
-1. show isis neighbors — all adjacencies
-2. show isis interface <intf> — level, hello, metric, auth
-3. EOS default: Level 1-2 on all interfaces
-4. show isis database detail — TLV contents
-5. show ip route isis — installed routes
-
-## EOS Pitfalls
-- net address unique per router
-- Missing address-family ipv4/ipv6 unicast
-- Overload bit excludes router from transit
-- set-overload-bit on-startup wait-for-bgp delays clearing
-
-## Output Format
-### ISIS Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'arista-bfd-troubleshooter': `# Arista EOS BFD Troubleshooter
-
-## Workflow
-1. show bfd peers — all sessions and states
-2. show bfd peers detail — Tx/Rx timers, multiplier, hardware offload
-3. Aggressive timers (100ms x3) cause flaps under load
-4. Check hardware offload: show platform trident bfd
-5. Verify protocol binding: neighbor <IP> bfd under router bgp
-
-## EOS Pitfalls
-- Echo mode mismatch between peers
-- BFD on MLAG peer-link unsupported
-- After EOS upgrade: sessions may not restore without graceful-restart
-
-## Output Format
-### BFD Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'juniper-bgp-troubleshooter': `# Juniper JunOS BGP Troubleshooter
-
-## Workflow
-1. show bgp summary — session states
-2. show bgp neighbor <IP> — error messages, last error
-3. JunOS CRITICAL: No routes sent without explicit export policy
-4. show route advertising-protocol bgp <peer> — what we send
-5. show route receive-protocol bgp <peer> — what we receive
-
-## JunOS Pitfalls
-- Missing export policy = zero prefixes advertised (unlike EOS)
-- Missing family inet unicast under group/neighbor
-- next-hop-self must be explicit for iBGP
-
-## Output Format
-### BGP Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'juniper-isis-troubleshooter': `# Juniper JunOS IS-IS Troubleshooter
-
-## Workflow
-1. show isis adjacency — all adjacencies
-2. show isis interface <intf> — level, hello, auth
-3. JunOS default: L1L2 on all interfaces
-4. family iso must be on all IS-IS interfaces
-5. show route protocol isis — installed routes
-
-## JunOS Pitfalls
-- family iso must be enabled on interface
-- wide-metrics-only must be consistent across all nodes
-- no-adjacency-down-notification masks flapping
-
-## Output Format
-### ISIS Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-
-  'juniper-ospf-troubleshooter': `# Juniper JunOS OSPF Troubleshooter
-
-## Workflow
-1. show ospf neighbor — all adjacency states (Full/Init/2Way/ExStart)
-2. show ospf interface <intf> detail — hello/dead timers, area, metric, passive
-3. ExStart = MTU mismatch or duplicate router-id
-4. show ospf database — LSDB; look for purged or missing LSAs
-5. show route protocol ospf — installed routes
-6. show route <prefix> — trace specific prefix path
-
-## JunOS Pitfalls
-- Passive interface suppresses hellos — check interface config
-- p2p vs broadcast network type mismatch causes stuck adjacency
-- OSPF metric changes affect LDP path selection on backbone
-
-## Output Format
-### OSPF Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'juniper-ldp-troubleshooter': `# Juniper JunOS LDP Troubleshooter (cRPD/Linux kernel)
-
-## Workflow
-1. show ldp session — all LDP sessions and state (Operational/Nonexistent)
-2. show ldp neighbor — discovered neighbors
-3. show route table inet.3 — MPLS label table (populated by LDP)
-4. ip -M route show (Linux) — kernel MPLS forwarding table
-5. show ldp statistics — hello/keepalive counters for auth issues
-
-## cRPD-Specific Requirements
-- Linux kernel MPLS must be enabled: net.mpls.platform_labels=65536
-- net.mpls.conf.<intf>.input=1 on all transit interfaces
-- cRPD uses targeted LDP sessions (link-local hello unreliable on veth)
-- LDP transport-address = router-id (loopback reachable via OSPF)
-
-## JunOS Pitfalls
-- LDP session drops if OSPF loses loopback reachability (transport addr unreachable)
-- Auth mismatch: show ldp statistics shows hello drops
-- inet.3 empty = LDP sessions not established = MPLS blackhole
-
-## Output Format
-### LDP Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output (inet.3 routes, session state, kernel routes)
-**Recommended Actions**: [ ] fix`,
-
-  'juniper-ospf-backbone-troubleshooter': `# Juniper JunOS OSPF Troubleshooter (same as juniper-ospf-troubleshooter)`,
-
-  'arista-l3ls-troubleshooter': `# Arista L3LS Orchestrator
-DC1 fabric: Arista cEOS spine-leaf. Spines=eBGP RR (AS65100), Leaves=eBGP clients (AS65101/65102).
-Triage order: 1) Underlay eBGP (IPv4-UNDERLAY-PEERS) 2) EVPN overlay (EVPN-OVERLAY-PEERS) 3) VXLAN data-plane 4) L2/L3 forwarding.
-Key commands: show bgp evpn summary, show ip bgp summary, show vxlan address-table, show run section router bgp`,
-
-  'juniper-dc-fabric-troubleshooter': `# Juniper DC Fabric Orchestrator
-DC2: Juniper cRPD spine-leaf. eBGP underlay (LEAF-UNDERLAY/SPINE-UNDERLAY groups). EVPN overlay (LEAF-OVERLAY/SPINE-OVERLAY).
-L3-only EVPN — TENANT-A VRF, Type-5 routes, VNI 20010. RT=target:65201:10.
-Triage: 1) eBGP underlay reachability 2) EVPN overlay sessions 3) VRF policy/RT import 4) VXLAN tunnel`,
-
-  'juniper-sp-backbone-troubleshooter': `# Juniper SP Backbone Orchestrator
-Backbone: OSPF area 0 + LDP + iBGP with rr1 as RR. P-routers: p1-p6. PEs: pe1(10.255.1.1), pe2(10.255.1.2). RR: rr1(10.255.2.1).
-Triage: 1) OSPF adjacencies (all PtToPt) 2) LDP sessions (targeted, transport=loopback) 3) iBGP to rr1 4) L3VPN CUSTOMER1`,
-
-  'multivendor-wan-troubleshooter': `# Multivendor WAN Orchestrator
-pe1/pe2 (Juniper, AS65000) connect to DC1 leaves (Arista AS65101) and DC2 (Juniper AS65202) via eBGP.
-iBGP via rr1. L3VPN CUSTOMER1 RD=10.255.1.1:100. Groups: ibgp-rr, DC-EBGP, CE1-EBGP, CE2-EBGP.
-Triage: 1) PE iBGP to rr1 2) PE export policy to rr1 3) DC eBGP sessions 4) L3VPN route import/export`,
-
-  'multivendor-dc-interconnect-troubleshooter': `# Multivendor DCI Orchestrator
-DC1(Arista EVPN/VXLAN) <-> pe1/pe2 (Juniper MPLS L3VPN) <-> DC2(Juniper EVPN/VXLAN L3-only).
-Cross-DC triage: 1) Intra-DC health on both sides 2) DC1 border leaf EVPN Type-5 to pe1 3) pe1 L3VPN to pe2 4) pe2 to DC2 leaf EVPN Type-5`,
-
-  'juniper-bgp-underlay-troubleshooter': `# Juniper JunOS BGP Underlay Troubleshooter (DC2)
-
-## DC2 Architecture
-DC2 uses eBGP for both underlay (inet.0) and EVPN overlay (bgp.evpn.0).
-NO IS-IS. NO LDP. Underlay peers are on 10.2.255.x/30 P2P links.
-EVPN overlay peers are on 10.2.1.x (loopbacks).
-
-## Workflow
-1. show bgp summary — check all peer states (underlay + overlay)
-2. show route table inet.0 — underlay prefix reachability
-3. show bgp neighbor <IP> — per-peer detail, Last error
-4. show route advertising-protocol bgp <peer> — what we send
-5. show policy — verify export policy exists
-
-## JunOS Pitfalls
-- Missing export policy = no routes advertised (unlike EOS)
-- Hold-time mismatch causes session drop
-- group UNDERLAY must have correct export policy
-
-## Output Format
-### BGP Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-
-  'juniper-evpn-troubleshooter': `# Juniper JunOS EVPN Troubleshooter
-
-## Workflow
-1. show bgp summary — EVPN AF state
-2. show evpn database — local MAC/IP entries
-3. show route table bgp.evpn.0 — EVPN routes in BGP
-4. show evpn instance — VNI/VLAN bindings
-5. vrf-target must match between advertising and importing PEs
-
-## JunOS Pitfalls
-- vrf-target mismatch = routes not imported
-- IRB MAC must match across redundant PEs
-- ESI must be identical on both PEs for multihomed CE
-
-## Output Format
-### EVPN Findings — <device>
-**Root Cause Hypothesis**: ranked list
-**Evidence**: specific output
-**Recommended Actions**: [ ] fix`,
-};
-
-async function loadFaults() {
-  try {
-    const r = await fetch(`${API}/faults`, { headers: headers() });
-    liveState.faults = await r.json();
-    renderFaultGrid();
-    loadLiveHistory();
-    document.getElementById('live-score-badge').textContent = `${liveState.faults.length} faults`;
-  } catch(e) {
-    document.getElementById('fault-grid').innerHTML = `<div style="color:var(--red);font-size:11px">Failed to load faults: ${e.message}</div>`;
-  }
-}
-
-function renderFaultGrid() {
-  const grid = document.getElementById('fault-grid');
-  if (!liveState.faults.length) {
-    grid.innerHTML = '<div class="mcp-note">No faults loaded — check clab server connectivity.</div>';
-    return;
-  }
-  // Sort: easy → medium → hard
-  const diffOrder = {easy:0, medium:1, hard:2};
-  const sorted = [...liveState.faults].sort((a,b) =>
-    (diffOrder[a.difficulty]??1) - (diffOrder[b.difficulty]??1) || a.id.localeCompare(b.id));
-  grid.innerHTML = sorted.map(f => {
-    const d = f.difficulty || 'medium';
-    const label = d === 'easy' ? '◎ EASY' : d === 'hard' ? '◆ HARD' : '◈ MEDIUM';
-    return `<div class="fault-card" onclick="openFault('${f.id}')">
-      <span class="diff-badge diff-${d}">${label}</span>
-      <div class="fault-card-id">${f.id} · ${f.skill}</div>
-      <div class="fault-card-name">${f.title}</div>
-      <div class="fault-card-device">Device: ${f.device} (${f.mgmt_ip})</div>
-      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${f.symptom}</div>
-    </div>`;
-  }).join('');
-}
-
-function openFault(faultId) {
-  liveState.currentFault = liveState.faults.find(f => f.id === faultId);
-  liveState.currentRunId = null;
-  const f = liveState.currentFault;
-
-  document.getElementById('fault-grid').style.display = 'none';
-  document.getElementById('live-history').style.display = 'none';
-  document.getElementById('live-run-panel').style.display = 'block';
-
-  document.getElementById('live-fault-title').textContent = f.title;
-  document.getElementById('live-fault-meta').textContent = `${f.id} · ${f.skill}`;
-  document.getElementById('live-device').textContent = `${f.device} (${f.mgmt_ip})`;
-  document.getElementById('live-symptom').textContent = f.symptom;
-  document.getElementById('live-skill').textContent = f.skill;
-  document.getElementById('live-optimal').textContent = (f.optimal_tool_sequence || []).join(' → ');
-  document.getElementById('expected-answer').textContent = `Root cause: ${f.root_cause}\nFix: ${f.fix_command}`;
-
-  // Reset phases
-  document.getElementById('phase-inject').classList.remove('hidden');
-  document.getElementById('phase-run').classList.add('hidden');
-  document.getElementById('phase-results').classList.add('hidden');
-  document.getElementById('inject-status').textContent = '';
-  document.getElementById('inject-btn').disabled = false;
-  document.getElementById('inject-btn').textContent = '⚡ INJECT FAULT INTO LAB';
-}
-
-function closeLivePanel() {
-  document.getElementById('live-run-panel').style.display = 'none';
-  document.getElementById('fault-grid').style.display = 'grid';
-  document.getElementById('live-history').style.display = 'block';
-  liveState.currentFault = null;
-  liveState.currentRunId = null;
-}
-
-async function injectFault() {
-  const f = liveState.currentFault;
-  const btn = document.getElementById('inject-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Injecting...';
-  document.getElementById('inject-status').textContent = '';
-
-  try {
-    const r = await fetch(`${API}/live/inject`, {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ fault_id: f.id })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    liveState.currentRunId = d.run_id;
-    document.getElementById('inject-status').textContent = '✓ Fault injected: ' + d.output.split('\n').slice(-1)[0];
-    document.getElementById('phase-inject').classList.add('hidden');
-    document.getElementById('phase-run').classList.remove('hidden');
-  } catch(e) {
-    document.getElementById('inject-status').textContent = 'Error: ' + e.message;
-    btn.disabled = false;
-    btn.textContent = '⚡ INJECT FAULT INTO LAB';
-  }
-}
-
 async function runLLM() {
   const f = liveState.currentFault;
   const btn = document.getElementById('run-llm-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Claude diagnosing...';
-  document.getElementById('run-status').textContent = 'Sending skill content + live MCP tool access to Claude...';
+  const selectedModel = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
+  const modelLabel = selectedModel.startsWith('claude') ? 'Claude' : selectedModel.split(':')[0].toUpperCase();
+  btn.innerHTML = `<span class="spinner"></span> ${modelLabel} diagnosing...`;
+  document.getElementById('run-status').textContent = `Loading skill and running ${modelLabel}...`;
 
-  // Fetch skill content — try backend (live SKILL.md) first, fall back to local map
-  let skillContent = SKILL_CONTENT_MAP[f.skill] || null;
-  if (!skillContent) {
-    try {
-      const sr = await fetch(`${API}/skill/${f.skill}`, { headers: headers() });
-      if (sr.ok) {
-        const sd = await sr.json();
-        skillContent = sd.content;
-      }
-    } catch {}
+  // Load skill from backend — always fresh, picks up optimizer patches
+  let skillContent = null;
+  let skillSource = 'none';
+  try {
+    const sr = await fetch(`${API}/skill/${f.skill}?t=${Date.now()}`, {headers:headers(),credentials:'include'});
+    if (sr.ok) {
+      const sd = await sr.json();
+      skillContent = sd.content || null;
+      skillSource  = sd.source || 'unknown';
+    } else {
+      const err = await sr.json().catch(()=>({error:'skill not found'}));
+      document.getElementById('run-status').textContent = `Warning: skill not found (${f.skill}) — ${err.error}`;
+    }
+  } catch(e) {
+    document.getElementById('run-status').textContent = `Warning: skill load failed — ${e.message}`;
   }
-  if (!skillContent) skillContent = `Use systematic troubleshooting methodology for ${f.skill}.`;
+
+  if (!skillContent) {
+    skillContent = `Troubleshoot this ${f.skill} fault systematically. Use composite health tools appropriate for the vendor.`;
+    skillSource = 'fallback';
+  }
+
+  console.log(`[runLLM] skill=${f.skill} source=${skillSource} chars=${skillContent.length}`);
 
   try {
     const r = await fetch(`${API}/live/run`, {
-      method: 'POST', headers: headers(),
+      method:'POST', headers:headers(), credentials:'include',
       body: JSON.stringify({
         run_id: liveState.currentRunId,
         skill_content: skillContent,
         fault_meta: f,
-        model: 'claude-sonnet-4-6'
+        model: selectedModel
       })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error);
 
-    // Show results
     document.getElementById('phase-run').classList.add('hidden');
     document.getElementById('phase-results').classList.remove('hidden');
     document.getElementById('live-response-box').textContent = d.llm_response;
 
-    // Score display
     const s = d.auto_score;
     document.getElementById('sc-total-val').textContent = s.total;
     document.getElementById('sc-grade').textContent = s.grade;
     document.getElementById('sc-grade').className = `sc-grade ${s.grade}`;
-    document.getElementById('sc-rc').textContent = s.root_cause;
-    document.getElementById('sc-ts').textContent = s.tool_sequence;
-    document.getElementById('sc-fp').textContent = s.fix_proposed;
+    document.getElementById('sc-rc').textContent  = s.root_cause;
+    document.getElementById('sc-ts').textContent  = s.tool_sequence;
+    document.getElementById('sc-fp').textContent  = s.fix_proposed;
     document.getElementById('sc-eff').textContent = s.efficiency;
-    // Show optimize button if not a perfect pass
+
+    // Populate expected answer from fault metadata
+    const ea = document.getElementById('expected-answer');
+    if (ea && f) {
+      const rc  = f.root_cause   ? `<strong>Root cause:</strong> ${escHtml(f.root_cause)}`   : '';
+      const fix = f.fix_command  ? `<br><strong>Fix command:</strong><br><code style="font-family:monospace;font-size:12px;white-space:pre-wrap">${escHtml(f.fix_command)}</code>` : '';
+      const opt = f.optimal_tool_sequence?.length ? `<br><strong>Optimal tools:</strong> ${escHtml(f.optimal_tool_sequence.join(' → '))}` : '';
+      ea.innerHTML = rc + fix + opt || '<em style="color:var(--text-dim)">No expected answer defined for this fault</em>';
+    }
+
+    // Show tool calls used
+    const toolList = (d.tool_calls||[]).map(t=>t.command+(t.node?`(${t.node})`:''));
+    if (toolList.length) {
+      document.getElementById('run-status').textContent = `Tools used: ${toolList.join(' → ')} | Skill source: ${skillSource}`;
+    }
+
     const optBtn = document.getElementById('btn-optimize-skill');
-    if(optBtn) optBtn.style.display = (s.grade !== 'PASS' || s.total < 100) ? 'block' : 'none';
+    if (optBtn) optBtn.style.display = (s.grade !== 'PASS' || s.total < 100) ? 'block' : 'none';
 
     loadLiveHistory();
     btn.disabled = false;
-    btn.textContent = '▶ RUN CLAUDE DIAGNOSIS';
-    document.getElementById('run-status').textContent = '';
+    btn.textContent = '▶ RE-RUN';
   } catch(e) {
     document.getElementById('run-status').textContent = 'Error: ' + e.message;
     btn.disabled = false;
-    btn.textContent = '▶ RUN CLAUDE DIAGNOSIS';
+    btn.textContent = '▶ RUN DIAGNOSIS';
   }
 }
 
@@ -1738,6 +1621,20 @@ async function loadLiveHistory() {
 
 
 
+
+function updateDiagBtn() {
+  const model = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
+  const btn = document.getElementById('run-llm-btn');
+  if (!btn) return;
+  if (model.startsWith('claude')) {
+    const label = model.includes('opus') ? 'Claude Opus' : 'Claude Sonnet';
+    btn.textContent = '▶ RUN ' + label.toUpperCase() + ' DIAGNOSIS';
+  } else {
+    const label = model.split(':')[0].toUpperCase();
+    btn.textContent = '▶ RUN ' + label + ' DIAGNOSIS';
+  }
+}
+init();
 </script>
 </body>
 </html>

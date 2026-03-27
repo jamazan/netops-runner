@@ -12,5 +12,6 @@
     "show route table inet.3",
     "show ldp neighbor",
     "show route 10.255.1.2"
-  ]
+  ],
+  "difficulty": "medium"
 }

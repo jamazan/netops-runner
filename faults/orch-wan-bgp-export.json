@@ -12,5 +12,6 @@
     "show bgp group ibgp-rr",
     "show route advertising-protocol bgp 10.255.2.1",
     "show policy EXPORT-TO-RR"
-  ]
+  ],
+  "difficulty": "hard"
 }

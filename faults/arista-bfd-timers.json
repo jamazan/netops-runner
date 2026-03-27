@@ -11,5 +11,6 @@
     "show bfd peers",
     "show run section bfd",
     "show bgp neighbors 10.255.0.1 detail"
-  ]
+  ],
+  "difficulty": "easy"
 }

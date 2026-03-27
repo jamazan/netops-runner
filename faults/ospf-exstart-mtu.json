@@ -12,5 +12,6 @@
     "show bgp neighbors 10.255.0.3",
     "show bgp neighbors 10.255.0.3 detail",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "medium"
 }

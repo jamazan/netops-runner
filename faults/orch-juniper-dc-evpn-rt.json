@@ -12,5 +12,6 @@
     "show route table bgp.evpn.0",
     "show policy TENANT-A-IMPORT",
     "show community TENANT-A-RT"
-  ]
+  ],
+  "difficulty": "hard"
 }

@@ -12,5 +12,6 @@
     "show ospf interface detail",
     "show route 10.255.2.1",
     "show bgp summary"
-  ]
+  ],
+  "difficulty": "hard"
 }

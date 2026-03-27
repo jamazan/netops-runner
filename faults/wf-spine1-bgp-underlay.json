@@ -12,5 +12,6 @@
     "show ip bgp summary",
     "show bgp neighbors 10.255.255.1 detail",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "easy"
 }

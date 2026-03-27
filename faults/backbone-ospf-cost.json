@@ -12,5 +12,6 @@
     "show route 10.255.1.2",
     "show ospf interface detail",
     "show route table inet.3"
-  ]
+  ],
+  "difficulty": "medium"
 }

@@ -12,5 +12,6 @@
     "show ospf interface detail",
     "show route 10.255.0.1",
     "show mpls lsp"
-  ]
+  ],
+  "difficulty": "medium"
 }

@@ -12,5 +12,6 @@
     "show route table bgp.l3vpn.0",
     "show bgp neighbor 10.255.2.1",
     "show route advertising-protocol bgp 10.255.2.1"
-  ]
+  ],
+  "difficulty": "medium"
 }

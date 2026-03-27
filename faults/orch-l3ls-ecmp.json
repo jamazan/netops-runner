@@ -11,5 +11,6 @@
     "show bgp evpn summary",
     "show ip route bgp",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "hard"
 }

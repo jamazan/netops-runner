@@ -12,5 +12,6 @@
     "show bgp neighbors 10.255.0.1",
     "show vxlan address-table",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "hard"
 }

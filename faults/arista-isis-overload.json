@@ -1,15 +1,16 @@
 {
   "id": "arista-isis-overload",
   "skill": "arista-bgp-troubleshooter",
-  "title": "BGP ECMP Broken — dc1-spine2 single path only",
+  "title": "BGP ECMP Broken \u2014 dc1-spine2 single path only",
   "device": "dc1-spine2",
   "mgmt_ip": "100.68.0.12",
   "symptom": "Traffic through dc1-spine2 is not load-balancing across leaf uplinks. Only one BGP path is being used despite multiple equal-cost paths available.",
-  "root_cause": "maximum-paths set to 1 under router bgp 65100 on dc1-spine2 — ECMP disabled",
+  "root_cause": "maximum-paths set to 1 under router bgp 65100 on dc1-spine2 \u2014 ECMP disabled",
   "fix_command": "router bgp 65100\nmaximum-paths 4 ecmp 4",
   "optimal_tool_sequence": [
     "show bgp evpn summary",
     "show ip route bgp",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "medium"
 }

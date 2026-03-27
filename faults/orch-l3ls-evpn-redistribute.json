@@ -12,5 +12,6 @@
     "show bgp evpn route-type mac-ip",
     "show vxlan address-table",
     "show run section router bgp"
-  ]
+  ],
+  "difficulty": "hard"
 }
