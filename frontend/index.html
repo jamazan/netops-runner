@@ -5,453 +5,477 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetOps Runner</title>
 <style>
-  :root {
-    --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
-    --border:#2a2f3d;--border2:#3a4050;
-    --text:#c9d1e0;--text-dim:#6b7385;--text-bright:#e8ecf4;
-    --accent:#4fc3f7;--accent2:#29b6f6;
-    --green:#4caf50;--red:#f44336;--yellow:#ffb300;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;font-size:17px;min-height:100vh;}
-  #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;}
-  .auth-box{background:var(--bg2);border:1px solid var(--border);padding:40px;width:420px;max-width:95vw;}
-  .auth-title{font-size:18px;color:var(--accent);margin-bottom:6px;}
-  .auth-sub{color:var(--text-dim);margin-bottom:28px;font-size:17px;}
-  .auth-label{color:var(--text-dim);font-size:19px;margin-bottom:5px;}
-  .auth-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:19px;padding:10px 12px;outline:none;margin-bottom:14px;}
-  .auth-input:focus{border-color:var(--accent);}
-  .auth-btn{width:100%;background:var(--accent);color:#000;font-family:inherit;font-size:19px;font-weight:700;padding:11px;border:none;cursor:pointer;letter-spacing:1px;}
-  .auth-btn:hover{background:var(--accent2);}
-  .auth-error{color:var(--red);font-size:17px;margin-top:10px;min-height:16px;}
-  #app{display:none;}
-  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 20px;height:44px;}
-  .topbar-title{color:var(--accent);font-size:17px;font-weight:700;flex:1;}
-  .topbar-user{color:var(--text-dim);font-size:17px;}
-  .topbar-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:17px;padding:4px 10px;cursor:pointer;}
-  .topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
-  .tabnav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;}
-  .tab{padding:10px 18px;cursor:pointer;font-size:17px;color:var(--text-dim);border-bottom:2px solid transparent;letter-spacing:0.5px;}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-  .tab:hover:not(.active){color:var(--text);}
-  .content{padding:24px 28px;max-width:1300px;}
-  .section-label{font-size:17px;color:var(--text-dim);letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-  .tests-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-  .tests-title{font-size:17px;color:var(--text-bright);}
-  .score-badge{background:var(--bg3);border:1px solid var(--border);padding:3px 10px;font-size:17px;color:var(--accent);}
-  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-  .filter-btn{font-family:inherit;font-size:19px;padding:3px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text-dim);cursor:pointer;}
-  .filter-btn.active{border-color:var(--accent);color:var(--accent);}
-  .test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
-  .test-card{background:var(--bg2);border:1px solid var(--border);padding:14px;cursor:pointer;transition:border-color 0.15s;}
-  .test-card:hover{border-color:var(--accent);}
-  .test-card.pass{border-left:3px solid var(--green);}
-  .test-card.fail{border-left:3px solid var(--red);}
-  .test-card.partial{border-left:3px solid var(--yellow);}
-  .test-card-id{font-size:19px;color:var(--text-dim);margin-bottom:5px;}
-  .test-card-name{font-size:15px;color:var(--text-bright);margin-bottom:6px;}
-  .test-card-tags{display:flex;gap:5px;flex-wrap:wrap;}
-  .tag{font-size:15px;padding:2px 6px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
-  .score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
-  .score-dot.pass{background:var(--green);}
-  .score-dot.fail{background:var(--red);}
-  .score-dot.partial{background:var(--yellow);}
-  #test-detail{display:none;padding:24px 28px;}
-  #test-detail-inner{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
-  #test-detail-left{}
-  #test-detail-right{position:sticky;top:0;}
-  @media(max-width:900px){#test-detail-inner{grid-template-columns:1fr;}}
-  .detail-back{background:none;border:none;color:var(--accent);font-family:inherit;font-size:15px;cursor:pointer;margin-bottom:16px;padding:0;}
-  .detail-name{font-size:19px;color:var(--text-bright);margin-bottom:6px;}
-  .detail-id{font-size:19px;color:var(--text-dim);margin-bottom:20px;}
-  .section{margin-bottom:18px;}
-  .section-header{font-size:19px;color:var(--text-dim);letter-spacing:1px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;}
-  .prompt-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;max-height:200px;overflow-y:auto;font-size:15px;}
-  .criteria-list{display:flex;flex-direction:column;gap:6px;}
-  .criteria-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:flex-start;gap:10px;}
-  .criteria-weight{color:var(--text-dim);font-size:19px;min-width:50px;}
-  .criteria-text{color:var(--text);flex:1;font-size:15px;}
-  .run-btn{background:var(--accent);color:#000;font-family:inherit;font-size:19px;font-weight:700;padding:11px 28px;border:none;cursor:pointer;letter-spacing:1px;margin-bottom:18px;}
-  .action-btn{font-family:inherit;font-size:15px;font-weight:700;padding:9px 22px;border:none;cursor:pointer;letter-spacing:0.5px;height:40px;min-width:120px;}
-  .accent-btn{background:var(--accent);color:#000;}.accent-btn:hover{background:var(--accent2);}
-  .green-btn{background:var(--green);color:#000;}.green-btn:hover{opacity:0.85;}
-  .yellow-btn{background:none;border:1px solid var(--yellow);color:var(--yellow);}.yellow-btn:hover{background:var(--yellow);color:#000;}
-  .run-btn:disabled{background:var(--border2);color:var(--text-dim);cursor:not-allowed;}
-  .run-btn:not(:disabled):hover{background:var(--accent2);}
-  .response-box{background:var(--bg);border:1px solid var(--border);padding:14px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.6;min-height:80px;max-height:500px;overflow-y:auto;font-size:15px;}
-  .score-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
-  .score-btn{font-family:inherit;font-size:17px;padding:6px 14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--text);}
-  .score-btn.selected.pass{background:var(--green);color:#000;border-color:var(--green);}
-  .score-btn.selected.fail{background:var(--red);color:#fff;border-color:var(--red);}
-  .score-btn.selected.partial{background:var(--yellow);color:#000;border-color:var(--yellow);}
-  .notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:15px;padding:10px;outline:none;resize:vertical;min-height:60px;}
-  .save-btn{background:var(--green);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;margin-top:10px;}
-  .status-msg{font-size:17px;color:var(--text-dim);margin-top:8px;min-height:16px;}
-  .results-table{width:100%;border-collapse:collapse;}
-  .results-table th{background:var(--bg3);color:var(--text-dim);font-size:19px;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
-  .results-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:17px;}
-  .results-table tr:hover td{background:var(--bg2);}
-  .admin-section{margin-bottom:28px;}
-  .admin-section-title{font-size:15px;color:var(--accent);margin-bottom:12px;letter-spacing:1px;}
-  .input-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
-  .inline-input{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:15px;padding:8px 10px;outline:none;}
-  .btn{font-family:inherit;font-size:17px;padding:7px 14px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;}
-  .btn:hover{border-color:var(--accent);color:var(--accent);}
-  .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
-  .btn.danger{border-color:var(--red);color:var(--red);}
-  .btn.danger:hover{background:var(--red);color:#fff;}
-  .token-list{display:flex;flex-direction:column;gap:6px;}
-  .token-item{background:var(--bg);border:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .token-id{font-size:17px;color:var(--accent);flex:1;}
-  .token-label{font-size:19px;color:var(--text-dim);}
-  .unused{color:var(--green)}.used{color:var(--text-dim)}.revoked{color:var(--red);}
-  .as-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
-  .as-card{background:var(--bg3);border:1px solid var(--border);padding:10px;text-align:center;}
-  .as-label{font-size:15px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;}
-  .as-value{font-size:23px;font-weight:700;color:var(--accent);}
-  .as-grade{font-size:15px;font-weight:700;margin-top:2px;}
-  .as-grade.PASS{color:var(--green);} .as-grade.PARTIAL{color:var(--yellow);} .as-grade.FAIL{color:var(--red);}
-  .as-criteria{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
-  .as-criterion{background:var(--bg);border:1px solid var(--border);padding:6px 10px;display:flex;align-items:flex-start;gap:8px;font-size:17px;}
-  .as-criterion.met{border-left:3px solid var(--green);}
-  .as-criterion.unmet{border-left:3px solid var(--red);}
-  .as-criterion.bonus{border-left:3px solid var(--yellow);}
-  .as-check{font-size:15px;min-width:14px;}
-  .as-note{color:var(--text-dim);font-size:19px;margin-top:2px;}
-  .as-summary{font-size:17px;color:var(--text-dim);margin-bottom:12px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px;}
-  .modal-overlay.active{display:flex;}
-  .modal-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:900px;display:flex;flex-direction:column;}
-  .modal-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);gap:12px;}
-  .modal-title{font-size:17px;color:var(--accent);flex:1;}
-  .modal-close{background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:19px;cursor:pointer;padding:0;}
-  .modal-body{padding:18px;overflow-y:auto;max-height:70vh;}
-  .modal-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;}
-  .diff-view{font-family:'IBM Plex Mono',monospace;font-size:17px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
-  .diff-add{background:#1a3a1a;color:#4caf50;}
-  .diff-remove{background:#3a0a0a;color:#f44336;}
-  .diff-same{color:var(--text-dim);}
-  .opt-analysis{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;font-size:15px;color:var(--text);margin-bottom:14px;line-height:1.6;}
-  .opt-changes{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-  .opt-change{background:var(--bg);border:1px solid var(--border);padding:6px 12px;font-size:17px;}
-  .opt-change-type{display:inline-block;padding:1px 6px;font-size:15px;font-weight:700;margin-right:6px;}
-  .opt-change-type.add{background:#1a3a1a;color:#4caf50;}
-  .opt-change-type.modify{background:#3a2e0a;color:#ffb300;}
-  .opt-change-type.remove{background:#3a0a0a;color:#f44336;}
-  .btn-accept{background:var(--green);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
-  .btn-reject{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:inherit;font-size:15px;padding:8px 16px;cursor:pointer;}
-  .btn-rerun{background:var(--accent);color:#000;font-family:inherit;font-size:15px;font-weight:700;padding:8px 20px;border:none;cursor:pointer;}
-  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .hidden{display:none!important;}
-  .mcp-note{background:var(--bg3);border:1px solid var(--border);padding:10px 14px;font-size:17px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;}
-  .mcp-note strong{color:var(--yellow);}
+:root {
+  --bg:#0a0c10; --bg2:#0f1218; --bg3:#141820; --bg4:#1a2030;
+  --border:#1e2536; --border2:#2a3348; --border3:#3a4560;
+  --text:#b8c5d6; --text-dim:#5a6880; --text-mid:#8090a8; --text-bright:#e2eaf4;
+  --accent:#38bdf8; --accent2:#0ea5e9; --accent-glow:rgba(56,189,248,0.15);
+  --green:#4ade80; --green-bg:rgba(74,222,128,0.08);
+  --red:#f87171;   --red-bg:rgba(248,113,113,0.08);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.08);
+  --purple:#a78bfa; --radius:6px;
+  --font-mono:'SF Mono','Fira Code','Cascadia Code','Consolas','Courier New',monospace;
+  --font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;min-height:100vh;line-height:1.5;}
+code,.mono{font-family:var(--font-mono);}
 
-  .score-card {
-    background:var(--bg2); border:1px solid var(--border); padding:12px;
-    text-align:center;
-  }
-  .sc-label { font-size:15px; color:var(--text-dim); letter-spacing:1px; margin-bottom:6px; }
-  .sc-value { font-size:27px; font-weight:700; color:var(--accent); }
-  .sc-max { font-size:19px; color:var(--text-dim); }
-  .sc-grade { font-size:15px; font-weight:700; }
-  .sc-grade.PASS { color:var(--green); }
-  .sc-grade.PARTIAL { color:var(--yellow); }
-  .sc-grade.FAIL { color:var(--red); }
-  .diff-easy   { background:#1a3a1a; color:#4caf50; border:1px solid #2d5a2d; }
-  .diff-medium { background:#3a2e0a; color:#ffb300; border:1px solid #5a4a0d; }
-  .diff-hard   { background:#3a0a0a; color:#f44336; border:1px solid #5a1a1a; }
-  .diff-badge  { display:inline-block; font-size:15px; padding:2px 7px; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
-  .fault-card { background:var(--bg2); border:1px solid var(--border); padding:14px; cursor:pointer; transition:border-color 0.15s; }
-  .fault-card:hover { border-color:var(--accent); }
-  .fault-card.has-score { border-left:3px solid var(--green); }
-  .fault-card-id { font-size:19px; color:var(--text-dim); margin-bottom:5px; }
-  .fault-card-name { font-size:15px; color:var(--text-bright); margin-bottom:6px; }
-  .fault-card-device { font-size:19px; color:var(--accent); }
+/* ── Auth ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 600px 400px at 30% 20%,rgba(56,189,248,0.04) 0%,transparent 70%),radial-gradient(ellipse 400px 300px at 80% 80%,rgba(167,139,250,0.03) 0%,transparent 60%);}
+.auth-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:44px 40px;width:400px;max-width:95vw;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
+.auth-wordmark{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.auth-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;}
+.auth-title{font-size:18px;font-weight:700;color:var(--text-bright);letter-spacing:-0.3px;}
+.auth-sub{font-size:12px;color:var(--text-dim);margin-top:1px;}
+.auth-field{margin-bottom:14px;}
+.auth-label{font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text-bright);font-family:var(--font-mono);font-size:14px;padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;}
+.auth-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+.auth-btn{width:100%;background:var(--accent);color:#0a0c10;font-family:var(--font-ui);font-size:14px;font-weight:700;padding:11px;border:none;border-radius:var(--radius);cursor:pointer;margin-top:8px;transition:background .15s;}
+.auth-btn:hover{background:var(--accent2);}
+.auth-error{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;}
 
+/* ── Shell ── */
+#app{display:none;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;height:48px;position:sticky;top:0;z-index:100;}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--text-bright);}
+.topbar-logo-icon{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;}
+.topbar-spacer{flex:1;}
+.topbar-user{color:var(--text-dim);font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+.topbar-btn{background:none;border:1px solid var(--border2);color:var(--text-mid);font-family:var(--font-ui);font-size:12px;padding:5px 12px;border-radius:var(--radius);cursor:pointer;transition:border-color .15s,color .15s;}
+.topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tabnav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:4px;}
+.tab{padding:12px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-dim);border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.active){color:var(--text);}
+
+/* ── Layout ── */
+.content{padding:24px;max-width:1400px;}
+.page-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.page-title{font-size:18px;font-weight:700;color:var(--text-bright);letter-spacing:-0.3px;}
+.page-badge{background:var(--bg3);border:1px solid var(--border2);color:var(--accent);font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;}
+.info-banner{background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--text-mid);margin-bottom:18px;line-height:1.6;}
+.info-banner strong{color:var(--yellow);}
+.section-label{font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.section{margin-bottom:20px;}
+.section-header{font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+
+/* ── Filters ── */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-btn{font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text-dim);border-radius:99px;cursor:pointer;transition:all .15s;}
+.filter-btn:hover{border-color:var(--border3);color:var(--text);}
+.filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+
+/* ── Cards ── */
+.test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+.test-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;}
+.test-card:hover{border-color:var(--border3);box-shadow:0 4px 16px rgba(0,0,0,0.3);transform:translateY(-1px);}
+.test-card.pass{border-left:3px solid var(--green);}
+.test-card.fail{border-left:3px solid var(--red);}
+.test-card.partial{border-left:3px solid var(--yellow);}
+.test-card-id{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px;}
+.test-card-name{font-size:13px;color:var(--text-bright);font-weight:500;margin-bottom:10px;line-height:1.4;}
+.test-card-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.tag{font-size:11px;padding:2px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);border-radius:99px;font-weight:500;}
+.score-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.score-dot.pass{background:var(--green);}.score-dot.fail{background:var(--red);}.score-dot.partial{background:var(--yellow);}
+.fault-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;}
+.fault-card:hover{border-color:var(--border3);box-shadow:0 4px 16px rgba(0,0,0,0.3);transform:translateY(-1px);}
+.fault-card.has-score{border-left:3px solid var(--green);}
+.fault-card-id{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:6px;}
+.fault-card-name{font-size:13px;color:var(--text-bright);font-weight:500;margin-bottom:10px;}
+.fault-card-device{font-size:12px;color:var(--accent);font-family:var(--font-mono);}
+.diff-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase;}
+.diff-easy{background:var(--green-bg);color:var(--green);border:1px solid rgba(74,222,128,0.2);}
+.diff-medium{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,0.2);}
+.diff-hard{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,0.2);}
+
+/* ── Test detail ── */
+#test-detail{display:none;padding:24px;}
+#test-detail-inner{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;}
+@media(max-width:900px){#test-detail-inner{grid-template-columns:1fr;}}
+#test-detail-right{position:sticky;top:60px;}
+.detail-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--accent);font-family:var(--font-ui);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0;}
+.detail-back:hover{opacity:0.75;}
+.detail-name{font-size:20px;font-weight:700;color:var(--text-bright);margin-bottom:4px;letter-spacing:-0.3px;}
+.detail-id{font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:24px;}
+.prompt-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.7;max-height:200px;overflow-y:auto;font-size:13px;font-family:var(--font-mono);}
+.criteria-list{display:flex;flex-direction:column;gap:6px;}
+.criteria-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:flex-start;gap:12px;}
+.criteria-weight{font-size:10px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:50px;text-transform:uppercase;letter-spacing:0.5px;padding-top:2px;}
+.criteria-text{color:var(--text);flex:1;font-size:13px;line-height:1.5;}
+
+/* ── Buttons ── */
+.run-btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#0a0c10;font-family:var(--font-ui);font-size:13px;font-weight:700;padding:10px 24px;border:none;border-radius:var(--radius);cursor:pointer;transition:background .15s,box-shadow .15s;margin-bottom:16px;}
+.run-btn:not(:disabled):hover{background:var(--accent2);box-shadow:0 4px 16px rgba(56,189,248,0.3);}
+.run-btn:disabled{background:var(--bg4);color:var(--text-dim);cursor:not-allowed;}
+.action-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:8px 16px;border:none;border-radius:var(--radius);cursor:pointer;transition:all .15s;height:36px;}
+.accent-btn{background:var(--accent);color:#0a0c10;}.accent-btn:hover{background:var(--accent2);}
+.green-btn{background:var(--green);color:#0a0c10;}.green-btn:hover{opacity:0.85;}
+.yellow-btn{background:none;border:1px solid var(--yellow);color:var(--yellow);}.yellow-btn:hover{background:var(--yellow);color:#0a0c10;}
+.btn{font-family:var(--font-ui);font-size:12px;padding:6px 12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:var(--radius);cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--border3);color:var(--text-bright);}
+.btn.primary{background:var(--accent);color:#0a0c10;border-color:var(--accent);font-weight:700;}
+.btn.danger{border-color:rgba(248,113,113,0.3);color:var(--red);}.btn.danger:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.response-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;white-space:pre-wrap;word-break:break-word;color:var(--text);line-height:1.7;min-height:80px;max-height:520px;overflow-y:auto;font-size:13px;font-family:var(--font-mono);}
+.score-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
+.score-btn{font-family:var(--font-ui);font-size:12px;font-weight:600;padding:7px 16px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;color:var(--text);border-radius:var(--radius);transition:all .15s;}
+.score-btn.selected.pass{background:var(--green);color:#0a0c10;border-color:var(--green);}
+.score-btn.selected.fail{background:var(--red);color:#fff;border-color:var(--red);}
+.score-btn.selected.partial{background:var(--yellow);color:#0a0c10;border-color:var(--yellow);}
+.notes-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-ui);font-size:13px;padding:10px 12px;outline:none;resize:vertical;min-height:60px;}
+.notes-input:focus{border-color:var(--accent);}
+.save-btn{background:var(--green);color:#0a0c10;font-family:var(--font-ui);font-size:12px;font-weight:700;padding:8px 20px;border:none;border-radius:var(--radius);cursor:pointer;margin-top:10px;}
+.save-btn:hover{opacity:0.85;}
+.status-msg{font-size:12px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+
+/* ── Scoring ── */
+.as-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.as-card,.score-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+.as-label,.sc-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;}
+.as-grade{font-size:18px;font-weight:800;}.as-grade.PASS{color:var(--green);}.as-grade.PARTIAL{color:var(--yellow);}.as-grade.FAIL{color:var(--red);}
+.as-value,.sc-value{font-size:22px;font-weight:700;color:var(--accent);}
+.sc-value{font-size:28px;line-height:1;}
+.sc-max{font-size:12px;color:var(--text-dim);margin-top:2px;}
+.sc-grade{font-size:12px;font-weight:700;margin-top:4px;}
+.sc-grade.PASS{color:var(--green);}.sc-grade.PARTIAL{color:var(--yellow);}.sc-grade.FAIL{color:var(--red);}
+#score-dashboard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;}
+.as-summary{font-size:13px;color:var(--text-mid);margin-bottom:12px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);line-height:1.6;}
+.as-criteria{display:flex;flex-direction:column;gap:5px;}
+.as-criterion{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;display:flex;align-items:flex-start;gap:10px;font-size:13px;}
+.as-criterion.met{border-left:3px solid var(--green);}.as-criterion.unmet{border-left:3px solid var(--red);}.as-criterion.bonus{border-left:3px solid var(--yellow);}
+.as-check{font-size:13px;min-width:14px;}
+.as-note{color:var(--text-dim);font-size:12px;margin-top:2px;font-style:italic;}
+
+/* ── Live lab ── */
+.fault-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.fault-meta-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.fault-meta-card-label{font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;}
+.fault-meta-card-value{font-size:13px;color:var(--text-bright);font-family:var(--font-mono);}
+.phase-strip{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.phase-num{width:26px;height:26px;border-radius:50%;background:var(--bg4);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-dim);flex-shrink:0;}
+.phase-num.active{background:var(--accent);border-color:var(--accent);color:#0a0c10;}
+.phase-num.done{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.phase-title{font-size:14px;font-weight:600;color:var(--text-mid);}
+.phase-title.active{color:var(--text-bright);}
+.eval-mode-bar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.eval-mode-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;}
+.eval-toggle{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;}
+.eval-toggle-opt{padding:5px 14px;font-family:var(--font-ui);font-size:11px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-dim);transition:all .15s;}
+.eval-toggle-opt.active{background:var(--accent);color:#0a0c10;}
+.eval-mode-hint{font-size:11px;color:var(--text-dim);font-style:italic;}
+.skill-invoc-panel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
+.skill-invoc-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.skill-invoc-name{color:var(--accent);font-size:13px;font-weight:700;font-family:var(--font-mono);}
+.skill-source-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.skill-source-badge.patched{background:var(--green-bg);color:var(--green);border:1px solid rgba(74,222,128,0.3);}
+.skill-source-badge.network-skills{background:rgba(56,189,248,0.08);color:var(--accent);border:1px solid rgba(56,189,248,0.3);}
+.skill-source-badge.bundled{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,0.3);}
+.skill-source-badge.fallback{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
+.skill-source-badge.unknown{background:var(--bg4);color:var(--text-dim);border:1px solid var(--border);}
+.skill-invoc-preview{font-size:12px;color:var(--text-dim);white-space:pre-wrap;max-height:140px;overflow-y:auto;background:var(--bg);padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);line-height:1.6;font-family:var(--font-mono);}
+.skill-toggle-btn{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:var(--font-ui);font-size:11px;padding:3px 10px;border-radius:var(--radius);cursor:pointer;}
+.skill-toggle-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── Tool trace ── */
+.tool-trace{margin:12px 0;}
+.tool-trace-timeline{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:8px 0;}
+.tool-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius);font-size:11px;font-family:var(--font-mono);border:1px solid var(--border2);}
+.tool-chip.optimal{background:var(--green-bg);border-color:rgba(74,222,128,0.3);color:var(--green);}
+.tool-chip.suboptimal{background:var(--yellow-bg);border-color:rgba(251,191,36,0.3);color:var(--yellow);}
+.tool-chip.extra{background:var(--red-bg);border-color:rgba(248,113,113,0.3);color:var(--red);}
+.tool-chip-arrow{color:var(--border3);font-size:10px;}
+.tool-trace-legend{display:flex;gap:14px;margin-top:6px;}
+.legend-item{font-size:10px;display:flex;align-items:center;gap:5px;color:var(--text-dim);}
+.legend-dot{width:7px;height:7px;border-radius:50%;}
+.legend-dot.optimal{background:var(--green);}.legend-dot.suboptimal{background:var(--yellow);}.legend-dot.extra{background:var(--red);}
+
+/* ── Compare ── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;}
+@media(max-width:900px){.compare-grid{grid-template-columns:1fr;}}
+.compare-col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.compare-col-title{font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.compare-col-title.with-skill{color:var(--accent);}.compare-col-title.no-skill{color:var(--text-dim);}
+.compare-score-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.compare-score-row:last-child{border-bottom:none;}
+.compare-score-label{color:var(--text-dim);}
+.compare-score-val{font-weight:700;}.compare-score-val.better{color:var(--green);}.compare-score-val.worse{color:var(--red);}
+.compare-delta{font-size:10px;padding:1px 5px;border-radius:99px;margin-left:4px;}
+.compare-delta.pos{background:var(--green-bg);color:var(--green);}.compare-delta.neg{background:var(--red-bg);color:var(--red);}.compare-delta.zero{background:var(--bg4);color:var(--text-dim);}
+.compare-grade{font-size:20px;font-weight:800;text-align:center;padding:10px 0;}
+.compare-grade.PASS{color:var(--green);}.compare-grade.PARTIAL{color:var(--yellow);}.compare-grade.FAIL{color:var(--red);}
+.compare-response{font-size:11px;white-space:pre-wrap;max-height:160px;overflow-y:auto;background:var(--bg);padding:10px;border:1px solid var(--border);border-radius:var(--radius);margin-top:8px;line-height:1.6;font-family:var(--font-mono);}
+.skill-impact-bar{height:4px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:8px 0;}
+.skill-impact-fill{height:100%;border-radius:3px;}
+.skill-impact-fill.with-skill{background:var(--accent);}.skill-impact-fill.no-skill{background:var(--text-dim);}
+.impact-summary{text-align:center;font-size:13px;font-weight:600;padding:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);margin-top:12px;}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:920px;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.6);}
+.modal-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px;}
+.modal-title{font-size:15px;font-weight:700;color:var(--accent);flex:1;}
+.modal-close{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);}
+.modal-close:hover{background:var(--bg4);color:var(--text-bright);}
+.modal-body{padding:20px;overflow-y:auto;max-height:70vh;}
+.modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;}
+.diff-view{font-family:var(--font-mono);font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.diff-add{background:var(--green-bg);color:var(--green);}.diff-remove{background:var(--red-bg);color:var(--red);}.diff-same{color:var(--text-dim);}
+.opt-analysis{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-size:13px;color:var(--text);margin-bottom:14px;line-height:1.7;}
+.opt-changes{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.opt-change{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;font-size:13px;}
+.opt-change-type{display:inline-block;padding:1px 8px;font-size:10px;font-weight:700;border-radius:99px;margin-right:8px;text-transform:uppercase;}
+.opt-change-type.add{background:var(--green-bg);color:var(--green);}.opt-change-type.modify{background:var(--yellow-bg);color:var(--yellow);}.opt-change-type.remove{background:var(--red-bg);color:var(--red);}
+.btn-accept{background:var(--green);color:#0a0c10;font-family:var(--font-ui);font-size:13px;font-weight:700;padding:9px 22px;border:none;border-radius:var(--radius);cursor:pointer;}
+.btn-reject{background:none;border:1px solid var(--border2);color:var(--text-mid);font-family:var(--font-ui);font-size:13px;padding:9px 18px;border-radius:var(--radius);cursor:pointer;}
+.btn-rerun{background:var(--accent);color:#0a0c10;font-family:var(--font-ui);font-size:13px;font-weight:700;padding:9px 22px;border:none;border-radius:var(--radius);cursor:pointer;}
+
+/* ── Misc ── */
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.hidden{display:none!important;}
+.mcp-note{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text-mid);margin-bottom:16px;line-height:1.6;}
+.mcp-note strong{color:var(--yellow);}
+#live-history{margin-top:32px;}
+#run-error-msg{color:var(--red);background:var(--red-bg);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:14px;}
+select{background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 12px;font-family:var(--font-ui);font-size:13px;cursor:pointer;outline:none;}
+select:focus{border-color:var(--accent);}
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.admin-section{margin-bottom:32px;}
+.admin-section-title{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:14px;letter-spacing:0.8px;text-transform:uppercase;}
+.input-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.inline-input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--font-ui);font-size:13px;padding:8px 12px;outline:none;border-radius:var(--radius);}
+.inline-input:focus{border-color:var(--accent);}
+.results-table{width:100%;border-collapse:collapse;}
+.results-table th{background:var(--bg3);color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+.results-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);}
+.results-table tr:hover td{background:var(--bg2);}
+#force-change-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
 </style>
 </head>
 <body>
 
 <div id="auth-screen">
   <div class="auth-box">
-    <div class="auth-title">◈ NETOPS RUNNER</div>
-    <div class="auth-sub">LLM Network Engineering Test Platform</div>
-    <div class="auth-label">USERNAME</div>
-    <input class="auth-input" id="username-input" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('password-input').focus()"/>
-    <div class="auth-label">PASSWORD</div>
-    <input class="auth-input" id="password-input" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()"/>
-    <button class="auth-btn" onclick="doAuth()">SIGN IN</button>
+    <div class="auth-wordmark">
+      <div class="auth-icon">&#x2B21;</div>
+      <div><div class="auth-title">NetOps Runner</div><div class="auth-sub">LLM Network Engineering Test Platform</div></div>
+    </div>
+    <div class="auth-field"><label class="auth-label">Username</label>
+      <input class="auth-input" id="username-input" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('password-input').focus()"/>
+    </div>
+    <div class="auth-field"><label class="auth-label">Password</label>
+      <input class="auth-input" id="password-input" type="password" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()"/>
+    </div>
+    <button class="auth-btn" onclick="doAuth()">Sign In</button>
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
 
 <div id="app">
   <div class="topbar">
-    <div class="topbar-title">◈ NETOPS RUNNER</div>
+    <div class="topbar-logo"><div class="topbar-logo-icon">&#x2B21;</div>NetOps Runner</div>
+    <div class="topbar-spacer"></div>
     <span class="topbar-user" id="topbar-user"></span>
-    <button class="topbar-btn" onclick="doLogout()">LOGOUT</button>
+    <button class="topbar-btn" onclick="doLogout()">Sign out</button>
   </div>
   <div class="tabnav">
-    
-    <div class="tab" onclick="showTab('skills')" id="tab-skills">SKILL TESTS</div>
-    <div class="tab active" onclick="showTab('live')" id="tab-live">⚡ LAB TESTS</div>
-    <div class="tab" onclick="showTab('results')" id="tab-results">MY RESULTS</div>
-    <div class="tab hidden" onclick="showTab('admin')" id="tab-admin">ADMIN</div>
+    <div class="tab" onclick="showTab('skills')" id="tab-skills">Skill Tests</div>
+    <div class="tab active" onclick="showTab('live')" id="tab-live">&#x26A1; Lab Tests</div>
+    <div class="tab" onclick="showTab('results')" id="tab-results">My Results</div>
+    <div class="tab hidden" onclick="showTab('admin')" id="tab-admin">Admin</div>
   </div>
 
-  <!-- Skill Tests -->
   <div id="tab-content-skills" class="content hidden">
-    <div class="tests-header">
-      <div class="tests-title">Skill-Based Tests</div>
-      <div class="score-badge" id="score-summary-skills">Loading...</div>
-    </div>
-    <div class="mcp-note">Tests LLM knowledge derived from your <strong>skills-exp</strong> troubleshooting skills — vendor-specific commands, behaviors, and pitfalls.</div>
+    <div class="page-header"><div class="page-title">Skill Tests</div><div class="page-badge" id="score-summary-skills">Loading&#x2026;</div></div>
+    <div class="info-banner">Tests LLM knowledge derived from your <strong>skills-exp</strong> troubleshooting skills &#x2014; vendor-specific commands, behaviors, and pitfalls.</div>
     <div class="filter-row" id="filter-row-skills"></div>
     <div class="test-grid" id="test-grid-skills"></div>
   </div>
 
-
-  <!-- Live Lab Tests Tab -->
   <div id="tab-content-live" class="content hidden">
-    <div class="tests-header">
-      <div class="tests-title">Lab Tests</div>
-      <div class="score-badge" id="live-score-badge">— tests</div>
-    </div>
-    <div class="mcp-note"><strong>⚡ Real fault injection:</strong> Each test injects a real fault into your ContainerLab topology, then asks Claude to diagnose using live device state via MCP tools. Auto-scored on root cause (40pts), tool sequence (30pts), fix proposal (20pts), and efficiency (10pts).</div>
-
-    <!-- Fault Cards -->
+    <div class="page-header"><div class="page-title">Lab Tests</div><div class="page-badge" id="live-score-badge">&#x2014; faults</div></div>
+    <div class="info-banner"><strong>&#x26A1; Real fault injection:</strong> Each test injects a real fault into your ContainerLab topology, then asks Claude to diagnose using live device state via MCP tools. Auto-scored on root cause (40 pts), tool sequence (30 pts), fix proposal (20 pts), and efficiency (10 pts).</div>
     <div id="fault-grid" class="test-grid"></div>
 
-    <!-- Run Panel -->
-    <div id="live-run-panel" style="display:none; margin-top:20px">
-      <button class="detail-back" onclick="closeLivePanel()">← Back to faults</button>
+    <div id="live-run-panel" style="display:none">
+      <button class="detail-back" onclick="closeLivePanel()">&#x2190; Back to faults</button>
       <div class="detail-name" id="live-fault-title"></div>
       <div class="detail-id" id="live-fault-meta"></div>
-
-      <div class="section">
-        <div class="section-header">▸ FAULT DETAILS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="mcp-note" style="margin:0"><strong>Device:</strong> <span id="live-device"></span><br><strong>Symptom:</strong> <span id="live-symptom"></span></div>
-          <div class="mcp-note" style="margin:0"><strong>Skill:</strong> <span id="live-skill"></span><br><strong>Optimal tools:</strong> <span id="live-optimal"></span></div>
-        </div>
+      <div class="fault-meta-grid">
+        <div class="fault-meta-card"><div class="fault-meta-card-label">Device</div><div class="fault-meta-card-value" id="live-device">&#x2014;</div></div>
+        <div class="fault-meta-card"><div class="fault-meta-card-label">Symptom</div><div class="fault-meta-card-value" id="live-symptom" style="font-family:var(--font-ui);font-size:12px">&#x2014;</div></div>
+        <div class="fault-meta-card"><div class="fault-meta-card-label">Skill</div><div class="fault-meta-card-value" id="live-skill">&#x2014;</div></div>
+        <div class="fault-meta-card"><div class="fault-meta-card-label">Optimal tool sequence</div><div class="fault-meta-card-value" id="live-optimal" style="font-size:11px">&#x2014;</div></div>
       </div>
-
-      <!-- Phase 1: Inject -->
-      <div class="section" id="phase-inject">
-        <div class="section-header">▸ PHASE 1 — INJECT FAULT</div>
-        <button class="run-btn" id="inject-btn" onclick="injectFault()">⚡ INJECT FAULT INTO LAB</button>
+      <div id="phase-inject">
+        <div class="phase-strip"><div class="phase-num active">1</div><div class="phase-title active">Inject fault into lab</div></div>
+        <button class="run-btn" id="inject-btn" onclick="injectFault()">&#x26A1; Inject fault</button>
         <div class="status-msg" id="inject-status"></div>
       </div>
-
-      <!-- Phase 2: Run LLM -->
-      <div class="section hidden" id="phase-run">
-        <div class="section-header">▸ PHASE 2 — RUN LLM DIAGNOSIS</div>
-        <div style="color:var(--green);font-size:17px;margin-bottom:12px">✓ Fault injected. Lab is broken. LLM will now diagnose using live MCP tools.</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <select id="model-select" onchange="updateDiagBtn()" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:4px;font-size:14px;cursor:pointer">
+      <div id="phase-run" class="hidden">
+        <div class="phase-strip"><div class="phase-num done">&#x2713;</div><div class="phase-num active">2</div><div class="phase-title active">Run LLM diagnosis</div></div>
+        <div class="eval-mode-bar">
+          <span class="eval-mode-label">Eval mode</span>
+          <div class="eval-toggle">
+            <button class="eval-toggle-opt active" id="evalmode-single" onclick="setEvalMode('single')">&#x25B6; Single run</button>
+            <button class="eval-toggle-opt" id="evalmode-compare" onclick="setEvalMode('compare')">&#x21C4; Skills vs No-skills</button>
+          </div>
+          <span class="eval-mode-hint" id="evalmode-hint">Run Claude with your skill injected into the system prompt</span>
+        </div>
+        <div class="skill-invoc-panel" id="skill-invoc-panel" style="display:none">
+          <div class="skill-invoc-header">
+            <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase">Skill loaded:</span>
+            <span class="skill-invoc-name" id="skill-invoc-name">&#x2014;</span>
+            <span class="skill-source-badge unknown" id="skill-invoc-badge">&#x2014;</span>
+            <button class="skill-toggle-btn" onclick="toggleSkillPreview(this)">Show content &#x25BE;</button>
+          </div>
+          <div class="skill-invoc-preview" id="skill-invoc-preview" style="display:none"></div>
+        </div>
+        <div style="color:var(--green);font-size:13px;margin-bottom:14px">&#x2713; Fault injected &#x2014; lab is broken. Claude will diagnose using live MCP tools.</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select id="model-select" onchange="updateDiagBtn()">
             <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
             <option value="claude-opus-4-6">Claude Opus 4.6</option>
             <option value="qwen2.5:7b">Qwen 2.5 7B (Ollama)</option>
           </select>
-          <button class="run-btn" id="run-llm-btn" onclick="runLLM()">▶ RUN CLAUDE DIAGNOSIS</button>
+          <button class="run-btn" id="run-llm-btn" onclick="runLLM()" style="margin-bottom:0">&#x25B6; Run Claude diagnosis</button>
         </div>
         <div class="status-msg" id="run-status"></div>
       </div>
-
-      <!-- Phase 3: Results -->
-      <div class="section hidden" id="phase-results">
-        <div class="section-header">▸ PHASE 3 — RESULTS & SCORING</div>
-
-        <!-- Score Dashboard -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      <div id="phase-results" class="hidden" style="margin-top:20px">
+        <div class="phase-strip"><div class="phase-num done">&#x2713;</div><div class="phase-num done">&#x2713;</div><div class="phase-num active">3</div><div class="phase-title active">Results &amp; scoring</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
           <div>
-            <div id="score-dashboard" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
-          <div class="score-card" id="sc-total">
-            <div class="sc-label">TOTAL</div>
-            <div class="sc-value" id="sc-total-val">—</div>
-            <div class="sc-grade" id="sc-grade">—</div>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">ROOT CAUSE</div>
-            <div class="sc-value" id="sc-rc">—</div>
-            <div class="sc-max">/ 40</div>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">TOOL SEQUENCE</div>
-            <div class="sc-value" id="sc-ts">—</div>
-            <div class="sc-max">/ 30</div>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">FIX PROPOSED</div>
-            <div class="sc-value" id="sc-fp">—</div>
-            <div class="sc-max">/ 20</div>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">EFFICIENCY</div>
-            <div class="sc-value" id="sc-eff">—</div>
-            <div class="sc-max">/ 10</div>
-          </div>
-        </div>
-
-            <div class="section">
-              <div class="section-header">▸ EXPECTED ANSWER</div>
-              <div class="mcp-note" id="expected-answer"></div>
+            <div id="score-dashboard">
+              <div class="score-card" id="sc-total"><div class="sc-label">Total</div><div class="sc-value" id="sc-total-val">&#x2014;</div><div class="sc-grade" id="sc-grade">&#x2014;</div></div>
+              <div class="score-card"><div class="sc-label">Root Cause</div><div class="sc-value" id="sc-rc">&#x2014;</div><div class="sc-max">/ 40</div></div>
+              <div class="score-card"><div class="sc-label">Tool Seq</div><div class="sc-value" id="sc-ts">&#x2014;</div><div class="sc-max">/ 30</div></div>
+              <div class="score-card"><div class="sc-label">Fix</div><div class="sc-value" id="sc-fp">&#x2014;</div><div class="sc-max">/ 20</div></div>
+              <div class="score-card"><div class="sc-label">Efficiency</div><div class="sc-value" id="sc-eff">&#x2014;</div><div class="sc-max">/ 10</div></div>
             </div>
-            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-              <button class="action-btn accent-btn" onclick="runLLM()">▶ RE-RUN</button>
-              <button class="action-btn green-btn" onclick="restoreLab()">🔄 RESTORE LAB</button>
-              <button class="action-btn yellow-btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none">◈ OPTIMIZE SKILL</button>
+            <div class="section"><div class="section-header">Expected answer</div><div class="mcp-note" id="expected-answer"></div></div>
+            <div class="tool-trace" id="tool-trace-section" style="display:none">
+              <div class="section-header">Tool call trace</div>
+              <div id="tool-trace-efficiency-label" style="font-size:11px;margin:4px 0;color:var(--text-dim)"></div>
+              <div class="tool-trace-timeline" id="tool-trace-timeline"></div>
+              <div class="tool-trace-legend">
+                <div class="legend-item"><div class="legend-dot optimal"></div>Optimal</div>
+                <div class="legend-item"><div class="legend-dot suboptimal"></div>Valid, off-position</div>
+                <div class="legend-item"><div class="legend-dot extra"></div>Extra call</div>
+              </div>
+            </div>
+            <div id="compare-results-section" style="display:none">
+              <div class="section-header" style="margin-top:14px">Skills vs No-skills</div>
+              <div class="compare-grid" id="compare-grid"></div>
+              <div class="impact-summary" id="impact-summary"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+              <button class="action-btn accent-btn" onclick="runLLM()">&#x25B6; Re-run</button>
+              <button class="action-btn green-btn" onclick="restoreLab()">&#x21BA; Restore lab</button>
+              <button class="action-btn yellow-btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none">&#x25C8; Optimize skill</button>
             </div>
             <div class="status-msg" id="restore-status"></div>
           </div>
-          <div class="section" style="margin:0">
-            <div class="section-header">▸ LLM RESPONSE</div>
-            <div class="response-box" id="live-response-box" style="max-height:65vh;overflow-y:auto"></div>
-          </div>
+          <div class="section" style="margin:0"><div class="section-header">LLM response</div><div class="response-box" id="live-response-box" style="max-height:65vh"></div></div>
         </div>
       </div>
     </div>
 
-    <!-- History -->
-    <div id="live-history" style="margin-top:28px">
-      <div class="section-label">RECENT RUNS</div>
-      <table class="results-table">
-        <thead><tr><th>FAULT</th><th>SCORE</th><th>GRADE</th><th>DURATION</th><th>DATE</th></tr></thead>
-        <tbody id="live-history-body"></tbody>
-      </table>
+    <div id="live-history"><div class="section-label">Recent runs</div>
+      <table class="results-table"><thead><tr><th>Fault</th><th>Score</th><th>Grade</th><th>Duration</th><th>Date</th></tr></thead><tbody id="live-history-body"></tbody></table>
     </div>
   </div>
 
-
-  <!-- Test Detail (shared for knowledge/mcp/skills) -->
   <div id="test-detail">
-    <button class="detail-back" onclick="backToTests()">← Back</button>
+    <button class="detail-back" onclick="backToTests()">&#x2190; Back</button>
     <div class="detail-name" id="detail-name"></div>
     <div class="detail-id" id="detail-id"></div>
-    <div id="run-error-msg" style="display:none;color:var(--red);background:var(--bg2);border:1px solid var(--red);padding:10px 14px;font-size:15px;margin-bottom:14px"></div>
+    <div id="run-error-msg" style="display:none"></div>
     <div id="test-detail-inner">
-      <!-- LEFT: test info -->
       <div id="test-detail-left">
-        <div class="section">
-          <div class="section-header">▸ SYSTEM PROMPT</div>
-          <div class="prompt-box" id="detail-system"></div>
-        </div>
-        <div class="section">
-          <div class="section-header">▸ USER PROMPT</div>
-          <div class="prompt-box" id="detail-user"></div>
-        </div>
-        <div class="section">
-          <div class="section-header">▸ PASS CRITERIA</div>
-          <div class="criteria-list" id="detail-criteria"></div>
-        </div>
-        <button class="run-btn" id="run-btn" onclick="runTest()">▶ RUN TEST</button>
+        <div class="section"><div class="section-header">System prompt</div><div class="prompt-box" id="detail-system"></div></div>
+        <div class="section"><div class="section-header">User prompt</div><div class="prompt-box" id="detail-user"></div></div>
+        <div class="section"><div class="section-header">Pass criteria</div><div class="criteria-list" id="detail-criteria"></div></div>
+        <button class="run-btn" id="run-btn" onclick="runTest()">&#x25B6; Run test</button>
       </div>
-      <!-- RIGHT: response + scoring -->
       <div id="test-detail-right">
-        <div class="section" id="response-section" style="display:none">
-          <div class="section-header">▸ LLM RESPONSE</div>
-          <div class="response-box" id="response-box" style="max-height:400px"></div>
-        </div>
+        <div class="section" id="response-section" style="display:none"><div class="section-header">LLM response</div><div class="response-box" id="response-box" style="max-height:400px"></div></div>
         <div class="section" id="score-section" style="display:none">
-          <div class="section-header">▸ AUTO-SCORE</div>
-          <div id="as-loading" style="font-size:17px;color:var(--text-dim)"><span class="spinner"></span> Scoring with Claude Haiku...</div>
+          <div class="section-header">Auto-score</div>
+          <div id="as-loading" style="font-size:13px;color:var(--text-dim)"><span class="spinner"></span> Scoring&#x2026;</div>
           <div id="as-result" style="display:none">
             <div class="as-dashboard">
-              <div class="as-card"><div class="as-label">GRADE</div><div class="as-grade" id="as-grade-val">—</div></div>
-              <div class="as-card"><div class="as-label">REQUIRED MET</div><div class="as-value" id="as-req-val">—</div></div>
-              <div class="as-card"><div class="as-label">BONUS MET</div><div class="as-value" id="as-bonus-val">—</div></div>
-              <div class="as-card"><div class="as-label">CONFIDENCE</div><div class="as-value" style="font-size:13px" id="as-conf-val">—</div></div>
+              <div class="as-card"><div class="as-label">Grade</div><div class="as-grade" id="as-grade-val">&#x2014;</div></div>
+              <div class="as-card"><div class="as-label">Required met</div><div class="as-value" id="as-req-val">&#x2014;</div></div>
+              <div class="as-card"><div class="as-label">Bonus met</div><div class="as-value" id="as-bonus-val">&#x2014;</div></div>
+              <div class="as-card"><div class="as-label">Confidence</div><div class="as-value" style="font-size:13px" id="as-conf-val">&#x2014;</div></div>
             </div>
             <div class="as-summary" id="as-summary-text"></div>
             <div class="as-criteria" id="as-criteria-list"></div>
           </div>
-          <div class="section-header" style="margin-top:12px">▸ OVERRIDE SCORE</div>
+          <div class="section-header" style="margin-top:16px">Override score</div>
           <div class="score-row">
-            <button class="score-btn" id="btn-pass" onclick="setScore('pass')">✓ PASS</button>
-            <button class="score-btn" id="btn-partial" onclick="setScore('partial')">~ PARTIAL</button>
-            <button class="score-btn" id="btn-fail" onclick="setScore('fail')">✗ FAIL</button>
+            <button class="score-btn" id="btn-pass" onclick="setScore('pass')">&#x2713; Pass</button>
+            <button class="score-btn" id="btn-partial" onclick="setScore('partial')">~ Partial</button>
+            <button class="score-btn" id="btn-fail" onclick="setScore('fail')">&#x2717; Fail</button>
           </div>
-          <textarea class="notes-input" id="notes-input" placeholder="Notes (optional override reason)..."></textarea><br/>
-          <button class="save-btn" onclick="saveResult()">SAVE RESULT</button>
+          <textarea class="notes-input" id="notes-input" placeholder="Notes&#x2026;"></textarea><br/>
+          <button class="save-btn" onclick="saveResult()">Save result</button>
           <div class="status-msg" id="status-msg"></div>
         </div>
-        <div id="right-placeholder" style="color:var(--text-dim);font-size:17px;padding:20px 0;display:block">
-          ◈ Run the test to see the LLM response here
-        </div>
+        <div id="right-placeholder" style="color:var(--text-dim);font-size:13px;padding:20px 0">Run the test to see the LLM response here.</div>
       </div>
     </div>
   </div>
 
-  <!-- Results Tab -->
   <div id="tab-content-results" class="content hidden">
-    <h3 style="color:var(--text-bright);margin-bottom:16px;font-size:14px">My Results</h3>
-    <table class="results-table">
-      <thead><tr><th>TEST</th><th>SCORE</th><th>NOTES</th><th>DATE</th></tr></thead>
-      <tbody id="results-body"></tbody>
-    </table>
+    <div class="page-header"><div class="page-title">My Results</div></div>
+    <table class="results-table"><thead><tr><th>Test</th><th>Score</th><th>Notes</th><th>Date</th></tr></thead><tbody id="results-body"></tbody></table>
   </div>
 
-  <!-- Admin Tab -->
   <div id="tab-content-admin" class="content hidden">
-    <div class="admin-section">
-      <div class="admin-section-title">CREATE USER</div>
+    <div class="page-header"><div class="page-title">Admin</div></div>
+    <div class="admin-section"><div class="admin-section-title">Create user</div>
       <div class="input-row">
-        <input class="inline-input" id="new-username" placeholder="Username" style="width:160px" autocomplete="off"/>
-        <span style="color:var(--text-dim);font-size:12px;align-self:center">Default password: <code>changeme</code></span>
-        <select id="new-role" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:8px 10px;font-family:inherit;font-size:14px">
-          <option value="user" selected>User</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button class="btn primary" onclick="createUser()">CREATE</button>
+        <input class="inline-input" id="new-username" placeholder="Username" style="width:180px" autocomplete="off"/>
+        <span style="color:var(--text-dim);font-size:12px">Default password: <code>changeme</code></span>
+        <select id="new-role" style="width:120px"><option value="user">User</option><option value="admin">Admin</option></select>
+        <button class="btn primary" onclick="createUser()">Create</button>
       </div>
-      <div id="create-user-out" style="font-size:13px;min-height:16px;margin-bottom:10px"></div>
+      <div id="create-user-out" style="font-size:12px;min-height:16px;margin-bottom:10px"></div>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">USERS</div>
-      <table class="results-table">
-        <thead><tr><th>USERNAME</th><th>ROLE</th><th>RUNS</th><th>LAST RUN</th><th>CREATED</th><th></th></tr></thead>
-        <tbody id="users-body"></tbody>
-      </table>
+    <div class="admin-section"><div class="admin-section-title">Users</div>
+      <table class="results-table"><thead><tr><th>Username</th><th>Role</th><th>Runs</th><th>Last run</th><th>Created</th><th></th></tr></thead><tbody id="users-body"></tbody></table>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">SKILLS REPOSITORY</div>
-      <div id="skills-repo-status" style="font-size:17px;color:var(--text-dim);margin-bottom:10px">
-        <span class="spinner"></span> Checking...
-      </div>
+    <div class="admin-section"><div class="admin-section-title">Skills repository</div>
+      <div id="skills-repo-status" style="font-size:13px;color:var(--text-dim);margin-bottom:12px"><span class="spinner"></span> Checking&#x2026;</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn primary" onclick="syncSkills()" id="btn-sync-skills">↓ SYNC FROM REPO</button>
-        <div id="sync-status" style="font-size:17px;color:var(--text-dim)"></div>
+        <button class="btn primary" onclick="syncSkills()" id="btn-sync-skills">&#x2193; Sync from repo</button>
+        <div id="sync-status" style="font-size:12px;color:var(--text-dim)"></div>
       </div>
     </div>
-    <div class="admin-section">
-      <div class="admin-section-title">SERVER</div>
-      <div style="color:var(--text-dim);font-size:17px;margin-bottom:10px">API Key: <span id="apikey-status">checking...</span></div>
-      <button class="btn" onclick="exportData()">EXPORT DB</button>
+    <div class="admin-section"><div class="admin-section-title">Server</div>
+      <div style="color:var(--text-dim);font-size:13px;margin-bottom:10px">API Key: <span id="apikey-status">checking&#x2026;</span></div>
+      <button class="btn" onclick="exportData()">Export DB</button>
     </div>
   </div>
 </div>
 
-<!-- Skill Optimizer Modal -->
 <div class="modal-overlay" id="optimize-modal">
   <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title">◈ SKILL OPTIMIZER</div>
-      <button class="modal-close" onclick="closeOptimizeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="optimize-modal-body">
-      <div style="color:var(--text-dim);font-size:12px"><span class="spinner"></span> Analyzing failure and generating skill improvements...</div>
-    </div>
+    <div class="modal-header"><div class="modal-title">&#x25C8; Skill Optimizer</div><button class="modal-close" onclick="closeOptimizeModal()">&#x2715;</button></div>
+    <div class="modal-body" id="optimize-modal-body"><div style="color:var(--text-dim);font-size:13px"><span class="spinner"></span> Analyzing&#x2026;</div></div>
     <div class="modal-footer" id="optimize-modal-footer" style="display:none">
-      <button class="btn-accept" id="btn-accept-skill" onclick="acceptSkillPatch()">✓ APPLY PATCH</button>
-      <button class="btn-rerun" id="btn-rerun-after-patch" style="display:none" onclick="rerunAfterPatch()">▶ RE-RUN TEST</button>
-      <button class="btn-reject" onclick="closeOptimizeModal()">✕ DISCARD</button>
-      <div style="flex:1;font-size:17px;color:var(--text-dim)" id="optimize-status"></div>
+      <button class="btn-accept" id="btn-accept-skill" onclick="acceptSkillPatch()">&#x2713; Apply patch</button>
+      <button class="btn-rerun" id="btn-rerun-after-patch" style="display:none" onclick="rerunAfterPatch()">&#x25B6; Re-run test</button>
+      <button class="btn-reject" onclick="closeOptimizeModal()">&#x2715; Discard</button>
+      <div style="flex:1;font-size:12px;color:var(--text-dim)" id="optimize-status"></div>
     </div>
   </div>
 </div>
-
-<!-- admin password modal removed - using cookie session auth -->
 
 <script>
 const API='/api';
@@ -1522,55 +1546,80 @@ async function runLLM() {
     skillSource = 'fallback';
   }
 
+  renderSkillPanel(f.skill, skillSource, skillContent);
   console.log(`[runLLM] skill=${f.skill} source=${skillSource} chars=${skillContent.length}`);
 
-  try {
-    const r = await fetch(`${API}/live/run`, {
-      method:'POST', headers:headers(), credentials:'include',
-      body: JSON.stringify({
-        run_id: liveState.currentRunId,
-        skill_content: skillContent,
-        fault_meta: f,
-        model: selectedModel
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-
-    document.getElementById('phase-run').classList.add('hidden');
-    document.getElementById('phase-results').classList.remove('hidden');
-    document.getElementById('live-response-box').textContent = d.llm_response;
-
-    const s = d.auto_score;
+  function fillScoreDash(s) {
     document.getElementById('sc-total-val').textContent = s.total;
     document.getElementById('sc-grade').textContent = s.grade;
-    document.getElementById('sc-grade').className = `sc-grade ${s.grade}`;
+    document.getElementById('sc-grade').className = 'sc-grade ' + s.grade;
     document.getElementById('sc-rc').textContent  = s.root_cause;
     document.getElementById('sc-ts').textContent  = s.tool_sequence;
     document.getElementById('sc-fp').textContent  = s.fix_proposed;
     document.getElementById('sc-eff').textContent = s.efficiency;
-
-    // Populate expected answer from fault metadata
+  }
+  function fillExpected() {
     const ea = document.getElementById('expected-answer');
-    if (ea && f) {
-      const rc  = f.root_cause   ? `<strong>Root cause:</strong> ${escHtml(f.root_cause)}`   : '';
-      const fix = f.fix_command  ? `<br><strong>Fix command:</strong><br><code style="font-family:monospace;font-size:12px;white-space:pre-wrap">${escHtml(f.fix_command)}</code>` : '';
-      const opt = f.optimal_tool_sequence?.length ? `<br><strong>Optimal tools:</strong> ${escHtml(f.optimal_tool_sequence.join(' → '))}` : '';
-      ea.innerHTML = rc + fix + opt || '<em style="color:var(--text-dim)">No expected answer defined for this fault</em>';
+    if (!ea || !f) return;
+    const rc  = f.root_cause  ? '<strong>Root cause:</strong> ' + escHtml(f.root_cause) : '';
+    const fix = f.fix_command ? '<br><strong>Fix:</strong><br><code style="font-family:monospace;font-size:12px;white-space:pre-wrap">' + escHtml(f.fix_command) + '</code>' : '';
+    const opt = (f.optimal_tool_sequence && f.optimal_tool_sequence.length)
+      ? '<br><strong>Optimal tools:</strong> ' + escHtml(f.optimal_tool_sequence.join(' → '))
+      : '';
+    ea.innerHTML = rc + fix + opt || '<em style="color:var(--text-dim)">No expected answer defined</em>';
+  }
+  function showResults(d) {
+    document.getElementById('phase-run').classList.add('hidden');
+    document.getElementById('phase-results').classList.remove('hidden');
+    document.getElementById('live-response-box').textContent = d.llm_response;
+    fillScoreDash(d.auto_score);
+    fillExpected();
+    renderToolTrace(d.tool_calls || [], f.optimal_tool_sequence || []);
+    document.getElementById('compare-results-section').style.display = 'none';
+  }
+  try {
+    if (evalMode === 'compare') {
+      document.getElementById('run-status').innerHTML = '<span class="spinner"></span> Run 1/2: WITH skill (' + f.skill + ')...';
+      const r1 = await fetch(API + '/live/run', {
+        method: 'POST', headers: headers(), credentials: 'include',
+        body: JSON.stringify({run_id: liveState.currentRunId, skill_content: skillContent, fault_meta: f, model: selectedModel})
+      });
+      const d1 = await r1.json();
+      if (!r1.ok) throw new Error(d1.error);
+      showResults(d1);
+      document.getElementById('run-status').innerHTML = '<span class="spinner"></span> Run 2/2: WITHOUT skill (generic)...';
+      const injR = await fetch(API + '/live/inject', {
+        method: 'POST', headers: headers(), credentials: 'include',
+        body: JSON.stringify({fault_id: f.id || liveState.currentFault.id})
+      });
+      const injD = await injR.json();
+      if (!injR.ok) throw new Error('Re-inject: ' + injD.error);
+      const genericSkill = 'You are a network engineer. Troubleshoot the fault systematically. Identify the root cause and propose a CLI fix.';
+      const r2 = await fetch(API + '/live/run', {
+        method: 'POST', headers: headers(), credentials: 'include',
+        body: JSON.stringify({run_id: injD.run_id, skill_content: genericSkill, fault_meta: f, model: selectedModel})
+      });
+      const d2 = await r2.json();
+      if (!r2.ok) throw new Error(d2.error);
+      renderCompareResults(d1, d2);
+      document.getElementById('run-status').textContent = 'Compare done — skill [' + skillSource + '] vs generic';
+      const ob1 = document.getElementById('btn-optimize-skill');
+      if (ob1) ob1.style.display = (d1.auto_score.grade !== 'PASS') ? 'block' : 'none';
+      loadLiveHistory(); btn.disabled = false; btn.textContent = '▶ RE-RUN';
+    } else {
+      const r = await fetch(API + '/live/run', {
+        method: 'POST', headers: headers(), credentials: 'include',
+        body: JSON.stringify({run_id: liveState.currentRunId, skill_content: skillContent, fault_meta: f, model: selectedModel})
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      showResults(d);
+      const tl = (d.tool_calls || []).map(function(t) { return t.command + (t.node ? '(' + t.node + ')' : ''); });
+      document.getElementById('run-status').textContent = 'Skill: ' + f.skill + ' [' + skillSource + ']' + (tl.length ? ' | ' + tl.join(' → ') : '');
+      const ob2 = document.getElementById('btn-optimize-skill');
+      if (ob2) ob2.style.display = (d.auto_score.grade !== 'PASS' || d.auto_score.total < 100) ? 'block' : 'none';
+      loadLiveHistory(); btn.disabled = false; btn.textContent = '▶ RE-RUN';
     }
-
-    // Show tool calls used
-    const toolList = (d.tool_calls||[]).map(t=>t.command+(t.node?`(${t.node})`:''));
-    if (toolList.length) {
-      document.getElementById('run-status').textContent = `Tools used: ${toolList.join(' → ')} | Skill source: ${skillSource}`;
-    }
-
-    const optBtn = document.getElementById('btn-optimize-skill');
-    if (optBtn) optBtn.style.display = (s.grade !== 'PASS' || s.total < 100) ? 'block' : 'none';
-
-    loadLiveHistory();
-    btn.disabled = false;
-    btn.textContent = '▶ RE-RUN';
   } catch(e) {
     document.getElementById('run-status').textContent = 'Error: ' + e.message;
     btn.disabled = false;
@@ -1636,5 +1685,6 @@ function updateDiagBtn() {
 }
 init();
 </script>
+<script src="/eval-framework.js"></script>
 </body>
 </html>
