@@ -1,0 +1,36 @@
+{
+  "id": "noisy-multi-symptom-ospf-cascade",
+  "skill": "diagnose-underlay",
+  "fault_domain": "noisy",
+  "title": "[Noisy] LDP/MPLS black hole \u2014 OSPF passive root cause with LDP cascade",
+  "device": "p1",
+  "mgmt_ip": "100.68.0.111",
+  "vendor": "juniper",
+  "symptom": "Multiple SP backbone alerts: LDP session to p2 down, MPLS labels for p1-p2 path missing from inet.3, L3VPN traffic between DC1 and campus1 experiencing packet loss, pe1 reporting partial MPLS path failure. OSPF adjacency count appears normal in summary. Looks like an LDP failure but may be caused upstream.",
+  "root_cause": "p1 eth2 interface (toward p2) set to OSPF passive \u2014 OSPF hellos suppressed, p1-p2 adjacency drops, LDP loses its IGP neighbor, LDP session tears down, MPLS labels for that path disappear from inet.3. Three distinct alerts (OSPF adj, LDP session, MPLS label) from one config change.",
+  "fix_command": "delete protocols ospf area 0.0.0.0 interface eth2 passive",
+  "optimal_tool_sequence": [
+    "show ospf neighbor",
+    "show ospf interface detail",
+    "show ldp session",
+    "show route table inet.3"
+  ],
+  "difficulty": "hard",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-underlay"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-underlay": "EP"
+  },
+  "eval_notes": "Agent must trace the alert chain: LDP down \u2192 caused by OSPF adj loss \u2192 caused by passive interface. Must not stop at LDP as root cause. Tests causal reasoning across protocol layers."
+}

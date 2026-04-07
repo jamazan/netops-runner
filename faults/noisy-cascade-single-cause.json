@@ -1,0 +1,36 @@
+{
+  "id": "noisy-cascade-single-cause",
+  "skill": "diagnose-underlay",
+  "fault_domain": "noisy",
+  "title": "[Noisy] Multi-symptom cascade \u2014 single spine BGP auth root cause",
+  "device": "dc1-spine1",
+  "mgmt_ip": "100.68.0.11",
+  "vendor": "arista",
+  "symptom": "Multiple simultaneous alerts: dc1-leaf1a EVPN session down, dc1-leaf1b EVPN session down, dc1-leaf2a EVPN session down, dc1-leaf2b EVPN session down. All four leaf EVPN sessions to dc1-spine1 dropped. dc1-spine2 sessions healthy. Appears to be a widespread fabric outage but may have a single root cause.",
+  "root_cause": "IPv4-UNDERLAY-PEERS and EVPN-OVERLAY-PEERS password changed to WRONG on dc1-spine1 only \u2014 all four leaf BGP sessions to spine1 drop simultaneously, generating cascade of EVPN alerts. Single device, single config change.",
+  "fix_command": "router bgp 65100\nneighbor IPv4-UNDERLAY-PEERS password 7 7x4B4rnJhZB438m9+BrBfQ==\nneighbor EVPN-OVERLAY-PEERS password 7 Q4fqtbqcZ7oQuKfuWtNGRQ==",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show ip bgp summary",
+    "show bgp neighbors 10.255.255.1 detail",
+    "show run section router bgp"
+  ],
+  "difficulty": "hard",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-underlay"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-underlay": "EP"
+  },
+  "eval_notes": "Agent must identify that all 4 alerts have the same root cause (spine1 password change) rather than treating them as 4 separate faults. Root cause identification requires tracing all sessions back to dc1-spine1 as the common element."
+}

@@ -140,6 +140,8 @@ code,.mono{font-family:var(--font-mono);}
 .sc-max{font-size:12px;color:var(--text-dim);margin-top:2px;}
 .sc-grade{font-size:12px;font-weight:700;margin-top:4px;}
 .sc-grade.PASS{color:var(--green);}.sc-grade.PARTIAL{color:var(--yellow);}.sc-grade.FAIL{color:var(--red);}
+.pass-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text-dim);}
+.pass-badge.ok{background:rgba(80,200,120,0.15);color:var(--green);border-color:var(--green);}.pass-badge.fail{background:rgba(220,80,80,0.15);color:var(--red);border-color:var(--red);}
 #score-dashboard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;}
 .as-summary{font-size:13px;color:var(--text-mid);margin-bottom:12px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);line-height:1.6;}
 .as-criteria{display:flex;flex-direction:column;gap:5px;}
@@ -253,6 +255,23 @@ select:focus{border-color:var(--accent);}
 .results-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);}
 .results-table tr:hover td{background:var(--bg2);}
 #force-change-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+
+/* Prompt Editor */
+.prompt-editor-bar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+.prompt-editor-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;}
+.prompt-editor-toggle:hover{background:var(--bg2);}
+.prompt-editor-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase;flex:1;}
+.prompt-editor-badge{font-size:10px;padding:2px 7px;border-radius:9px;background:#2a4a2a;color:#68d391;border:1px solid #68d391;}
+.prompt-editor-badge.overridden{background:#4a3a1a;color:#f6ad55;border-color:#f6ad55;}
+.prompt-editor-body{display:none;padding:0 14px 14px;}
+.prompt-editor-body.open{display:block;}
+.prompt-editor-section{margin-bottom:12px;}
+.prompt-editor-section-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.6px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.prompt-editor-section-label button{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text-dim);cursor:pointer;}
+.prompt-editor-section-label button:hover{color:var(--text);border-color:var(--text-dim);}
+.prompt-editor-textarea{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:12px;line-height:1.6;padding:10px 12px;resize:vertical;min-height:100px;}
+.prompt-editor-textarea:focus{outline:none;border-color:var(--accent);}
+.prompt-editor-textarea.skill-area{min-height:160px;}
 </style>
 </head>
 <body>
@@ -282,154 +301,12 @@ select:focus{border-color:var(--accent);}
     <button class="topbar-btn" onclick="doLogout()">Sign out</button>
   </div>
   <div class="tabnav">
-    <div class="tab" onclick="showTab('skills')" id="tab-skills">Skill Tests</div>
-    <div class="tab active" onclick="showTab('live')" id="tab-live">&#x26A1; Lab Tests</div>
     <div class="tab" onclick="showTab('results')" id="tab-results">My Results</div>
     <div class="tab hidden" onclick="showTab('admin')" id="tab-admin">Admin</div>
+    <div class="tab" onclick="showTab('evpn')" id="tab-evpn">&#x26A1; EVPN NOC</div>
   </div>
 
-  <div id="tab-content-skills" class="content hidden">
-    <div class="page-header"><div class="page-title">Skill Tests</div><div class="page-badge" id="score-summary-skills">Loading&#x2026;</div></div>
-    <div class="info-banner">Tests LLM knowledge derived from your <strong>skills-exp</strong> troubleshooting skills &#x2014; vendor-specific commands, behaviors, and pitfalls.</div>
-    <div class="filter-row" id="filter-row-skills"></div>
-    <div class="test-grid" id="test-grid-skills"></div>
-  </div>
 
-  <div id="tab-content-live" class="content hidden">
-    <div class="page-header"><div class="page-title">Lab Tests</div><div class="page-badge" id="live-score-badge">&#x2014; faults</div></div>
-    <div class="info-banner"><strong>&#x26A1; Real fault injection:</strong> Each test injects a real fault into your ContainerLab topology, then asks Claude to diagnose using live device state via MCP tools. Auto-scored on root cause (40 pts), tool sequence (30 pts), fix proposal (20 pts), and efficiency (10 pts).</div>
-    <div id="fault-grid" class="test-grid"></div>
-
-    <div id="live-run-panel" style="display:none">
-      <button class="detail-back" onclick="closeLivePanel()">&#x2190; Back to faults</button>
-      <div class="detail-name" id="live-fault-title"></div>
-      <div class="detail-id" id="live-fault-meta"></div>
-      <div class="fault-meta-grid">
-        <div class="fault-meta-card"><div class="fault-meta-card-label">Device</div><div class="fault-meta-card-value" id="live-device">&#x2014;</div></div>
-        <div class="fault-meta-card"><div class="fault-meta-card-label">Symptom</div><div class="fault-meta-card-value" id="live-symptom" style="font-family:var(--font-ui);font-size:12px">&#x2014;</div></div>
-        <div class="fault-meta-card"><div class="fault-meta-card-label">Skill</div><div class="fault-meta-card-value" id="live-skill">&#x2014;</div></div>
-        <div class="fault-meta-card"><div class="fault-meta-card-label">Optimal tool sequence</div><div class="fault-meta-card-value" id="live-optimal" style="font-size:11px">&#x2014;</div></div>
-      </div>
-      <div id="phase-inject">
-        <div class="phase-strip"><div class="phase-num active">1</div><div class="phase-title active">Inject fault into lab</div></div>
-        <button class="run-btn" id="inject-btn" onclick="injectFault()">&#x26A1; Inject fault</button>
-        <div class="status-msg" id="inject-status"></div>
-      </div>
-      <div id="phase-run" class="hidden">
-        <div class="phase-strip"><div class="phase-num done">&#x2713;</div><div class="phase-num active">2</div><div class="phase-title active">Run LLM diagnosis</div></div>
-        <div class="eval-mode-bar">
-          <span class="eval-mode-label">Eval mode</span>
-          <div class="eval-toggle">
-            <button class="eval-toggle-opt active" id="evalmode-single" onclick="setEvalMode('single')">&#x25B6; Single run</button>
-            <button class="eval-toggle-opt" id="evalmode-compare" onclick="setEvalMode('compare')">&#x21C4; Skills vs No-skills</button>
-          </div>
-          <span class="eval-mode-hint" id="evalmode-hint">Run Claude with your skill injected into the system prompt</span>
-        </div>
-        <div class="skill-invoc-panel" id="skill-invoc-panel" style="display:none">
-          <div class="skill-invoc-header">
-            <span style="font-size:10px;color:var(--text-dim);letter-spacing:0.8px;text-transform:uppercase">Skill loaded:</span>
-            <span class="skill-invoc-name" id="skill-invoc-name">&#x2014;</span>
-            <span class="skill-source-badge unknown" id="skill-invoc-badge">&#x2014;</span>
-            <button class="skill-toggle-btn" onclick="toggleSkillPreview(this)">Show content &#x25BE;</button>
-          </div>
-          <div class="skill-invoc-preview" id="skill-invoc-preview" style="display:none"></div>
-        </div>
-        <div style="color:var(--green);font-size:13px;margin-bottom:14px">&#x2713; Fault injected &#x2014; lab is broken. Claude will diagnose using live MCP tools.</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <select id="model-select" onchange="updateDiagBtn()">
-            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-            <option value="claude-opus-4-6">Claude Opus 4.6</option>
-            <option value="qwen2.5:7b">Qwen 2.5 7B (Ollama)</option>
-          </select>
-          <button class="run-btn" id="run-llm-btn" onclick="runLLM()" style="margin-bottom:0">&#x25B6; Run Claude diagnosis</button>
-        </div>
-        <div class="status-msg" id="run-status"></div>
-      </div>
-      <div id="phase-results" class="hidden" style="margin-top:20px">
-        <div class="phase-strip"><div class="phase-num done">&#x2713;</div><div class="phase-num done">&#x2713;</div><div class="phase-num active">3</div><div class="phase-title active">Results &amp; scoring</div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-          <div>
-            <div id="score-dashboard">
-              <div class="score-card" id="sc-total"><div class="sc-label">Total</div><div class="sc-value" id="sc-total-val">&#x2014;</div><div class="sc-grade" id="sc-grade">&#x2014;</div></div>
-              <div class="score-card"><div class="sc-label">Root Cause</div><div class="sc-value" id="sc-rc">&#x2014;</div><div class="sc-max">/ 40</div></div>
-              <div class="score-card"><div class="sc-label">Tool Seq</div><div class="sc-value" id="sc-ts">&#x2014;</div><div class="sc-max">/ 30</div></div>
-              <div class="score-card"><div class="sc-label">Fix</div><div class="sc-value" id="sc-fp">&#x2014;</div><div class="sc-max">/ 20</div></div>
-              <div class="score-card"><div class="sc-label">Efficiency</div><div class="sc-value" id="sc-eff">&#x2014;</div><div class="sc-max">/ 10</div></div>
-            </div>
-            <div class="section"><div class="section-header">Expected answer</div><div class="mcp-note" id="expected-answer"></div></div>
-            <div class="tool-trace" id="tool-trace-section" style="display:none">
-              <div class="section-header">Tool call trace</div>
-              <div id="tool-trace-efficiency-label" style="font-size:11px;margin:4px 0;color:var(--text-dim)"></div>
-              <div class="tool-trace-timeline" id="tool-trace-timeline"></div>
-              <div class="tool-trace-legend">
-                <div class="legend-item"><div class="legend-dot optimal"></div>Optimal</div>
-                <div class="legend-item"><div class="legend-dot suboptimal"></div>Valid, off-position</div>
-                <div class="legend-item"><div class="legend-dot extra"></div>Extra call</div>
-              </div>
-            </div>
-            <div id="compare-results-section" style="display:none">
-              <div class="section-header" style="margin-top:14px">Skills vs No-skills</div>
-              <div class="compare-grid" id="compare-grid"></div>
-              <div class="impact-summary" id="impact-summary"></div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-              <button class="action-btn accent-btn" onclick="runLLM()">&#x25B6; Re-run</button>
-              <button class="action-btn green-btn" onclick="restoreLab()">&#x21BA; Restore lab</button>
-              <button class="action-btn yellow-btn" id="btn-optimize-skill" onclick="openOptimizeModal()" style="display:none">&#x25C8; Optimize skill</button>
-            </div>
-            <div class="status-msg" id="restore-status"></div>
-          </div>
-          <div class="section" style="margin:0"><div class="section-header">LLM response</div><div class="response-box" id="live-response-box" style="max-height:65vh"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="live-history"><div class="section-label">Recent runs</div>
-      <table class="results-table"><thead><tr><th>Fault</th><th>Score</th><th>Grade</th><th>Duration</th><th>Date</th></tr></thead><tbody id="live-history-body"></tbody></table>
-    </div>
-  </div>
-
-  <div id="test-detail">
-    <button class="detail-back" onclick="backToTests()">&#x2190; Back</button>
-    <div class="detail-name" id="detail-name"></div>
-    <div class="detail-id" id="detail-id"></div>
-    <div id="run-error-msg" style="display:none"></div>
-    <div id="test-detail-inner">
-      <div id="test-detail-left">
-        <div class="section"><div class="section-header">System prompt</div><div class="prompt-box" id="detail-system"></div></div>
-        <div class="section"><div class="section-header">User prompt</div><div class="prompt-box" id="detail-user"></div></div>
-        <div class="section"><div class="section-header">Pass criteria</div><div class="criteria-list" id="detail-criteria"></div></div>
-        <button class="run-btn" id="run-btn" onclick="runTest()">&#x25B6; Run test</button>
-      </div>
-      <div id="test-detail-right">
-        <div class="section" id="response-section" style="display:none"><div class="section-header">LLM response</div><div class="response-box" id="response-box" style="max-height:400px"></div></div>
-        <div class="section" id="score-section" style="display:none">
-          <div class="section-header">Auto-score</div>
-          <div id="as-loading" style="font-size:13px;color:var(--text-dim)"><span class="spinner"></span> Scoring&#x2026;</div>
-          <div id="as-result" style="display:none">
-            <div class="as-dashboard">
-              <div class="as-card"><div class="as-label">Grade</div><div class="as-grade" id="as-grade-val">&#x2014;</div></div>
-              <div class="as-card"><div class="as-label">Required met</div><div class="as-value" id="as-req-val">&#x2014;</div></div>
-              <div class="as-card"><div class="as-label">Bonus met</div><div class="as-value" id="as-bonus-val">&#x2014;</div></div>
-              <div class="as-card"><div class="as-label">Confidence</div><div class="as-value" style="font-size:13px" id="as-conf-val">&#x2014;</div></div>
-            </div>
-            <div class="as-summary" id="as-summary-text"></div>
-            <div class="as-criteria" id="as-criteria-list"></div>
-          </div>
-          <div class="section-header" style="margin-top:16px">Override score</div>
-          <div class="score-row">
-            <button class="score-btn" id="btn-pass" onclick="setScore('pass')">&#x2713; Pass</button>
-            <button class="score-btn" id="btn-partial" onclick="setScore('partial')">~ Partial</button>
-            <button class="score-btn" id="btn-fail" onclick="setScore('fail')">&#x2717; Fail</button>
-          </div>
-          <textarea class="notes-input" id="notes-input" placeholder="Notes&#x2026;"></textarea><br/>
-          <button class="save-btn" onclick="saveResult()">Save result</button>
-          <div class="status-msg" id="status-msg"></div>
-        </div>
-        <div id="right-placeholder" style="color:var(--text-dim);font-size:13px;padding:20px 0">Run the test to see the LLM response here.</div>
-      </div>
-    </div>
-  </div>
 
   <div id="tab-content-results" class="content hidden">
     <div class="page-header"><div class="page-title">My Results</div></div>
@@ -450,13 +327,6 @@ select:focus{border-color:var(--accent);}
     <div class="admin-section"><div class="admin-section-title">Users</div>
       <table class="results-table"><thead><tr><th>Username</th><th>Role</th><th>Runs</th><th>Last run</th><th>Created</th><th></th></tr></thead><tbody id="users-body"></tbody></table>
     </div>
-    <div class="admin-section"><div class="admin-section-title">Skills repository</div>
-      <div id="skills-repo-status" style="font-size:13px;color:var(--text-dim);margin-bottom:12px"><span class="spinner"></span> Checking&#x2026;</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn primary" onclick="syncSkills()" id="btn-sync-skills">&#x2193; Sync from repo</button>
-        <div id="sync-status" style="font-size:12px;color:var(--text-dim)"></div>
-      </div>
-    </div>
     <div class="admin-section"><div class="admin-section-title">Server</div>
       <div style="color:var(--text-dim);font-size:13px;margin-bottom:10px">API Key: <span id="apikey-status">checking&#x2026;</span></div>
       <button class="btn" onclick="exportData()">Export DB</button>
@@ -464,25 +334,13 @@ select:focus{border-color:var(--accent);}
   </div>
 </div>
 
-<div class="modal-overlay" id="optimize-modal">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">&#x25C8; Skill Optimizer</div><button class="modal-close" onclick="closeOptimizeModal()">&#x2715;</button></div>
-    <div class="modal-body" id="optimize-modal-body"><div style="color:var(--text-dim);font-size:13px"><span class="spinner"></span> Analyzing&#x2026;</div></div>
-    <div class="modal-footer" id="optimize-modal-footer" style="display:none">
-      <button class="btn-accept" id="btn-accept-skill" onclick="acceptSkillPatch()">&#x2713; Apply patch</button>
-      <button class="btn-rerun" id="btn-rerun-after-patch" style="display:none" onclick="rerunAfterPatch()">&#x25B6; Re-run test</button>
-      <button class="btn-reject" onclick="closeOptimizeModal()">&#x2715; Discard</button>
-      <div style="flex:1;font-size:12px;color:var(--text-dim)" id="optimize-status"></div>
-    </div>
-  </div>
-</div>
 
 <script>
 const API='/api';
 let state={
   user:null,
-  currentTest:null,currentTestSet:'skills',currentScore:null,currentResponse:null,
-  results:{},activeFilters:{skills:''}
+  currentTest:null,currentScore:null,currentResponse:null,
+  results:{}
 };
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){return new Date(ts).toLocaleDateString()+' '+new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -570,11 +428,12 @@ function showApp(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('topbar-user').textContent=state.user.username+' ['+state.user.role+']';
-  if(state.user.is_admin)document.getElementById('tab-admin').classList.remove('hidden');
-  document.getElementById('tab-live').classList.add('active');
-  document.getElementById('tab-content-live').classList.remove('hidden');
-  loadResults().then(()=>{renderTestGrid('skills');loadFaults();});
-  if(state.user.is_admin){loadAdminData();loadSkillsStatus();}
+  document.getElementById('tab-evpn').classList.remove('hidden');if(state.user.is_admin){document.getElementById('tab-admin').classList.remove('hidden');}
+  document.getElementById('tab-evpn').classList.add('active');
+  document.getElementById('tab-content-evpn').classList.remove('hidden');
+  loadResults();
+  renderEvpnTab();
+  if(state.user.is_admin){loadAdminData();}
 }
 async function loadResults(){
   try{
@@ -584,169 +443,16 @@ async function loadResults(){
     rows.forEach(row=>{state.results[row.test_id]=row;});
   }catch{}
 }
-function getAllTags(tests){const t=new Set();tests.forEach(x=>x.tags.forEach(g=>t.add(g)));return[...t].sort();}
-function renderTestGrid(set){
-  const tests=SKILL_TESTS;
-  const grid=document.getElementById('test-grid-'+set);
-  const filterRow=document.getElementById('filter-row-'+set);
-  const active=state.activeFilters[set];
-  filterRow.innerHTML=`<button class="filter-btn ${!active?'active':''}" onclick="setFilter('${set}','')">ALL</button>`+
-    getAllTags(tests).map(t=>`<button class="filter-btn ${active===t?'active':''}" onclick="setFilter('${set}','${t}')">${t}</button>`).join('');
-  const filtered=active?tests.filter(t=>t.tags.includes(active)):tests;
-  let pass=0,fail=0,partial=0;
-  grid.innerHTML=filtered.map(t=>{
-    const res=state.results[t.id];const cls=res?res.score:'';
-    if(res?.score==='pass')pass++;else if(res?.score==='fail')fail++;else if(res?.score==='partial')partial++;
-    return`<div class="test-card ${cls}" onclick="showTest('${t.id}','${set}')">
-      <div class="test-card-id">${t.id}</div>
-      <div class="test-card-name">${res?`<span class="score-dot ${res.score}"></span>`:''}${escHtml(t.name)}</div>
-      <div class="test-card-tags">${t.tags.map(g=>`<span class="tag">${g}</span>`).join('')}</div>
-    </div>`;
-  }).join('');
-  const done=pass+fail+partial;
-  document.getElementById('score-summary-'+set).textContent=`${done}/${filtered.length} done — ${pass}✓ ${partial}~ ${fail}✗`;
-}
-function setFilter(set,tag){state.activeFilters[set]=tag;renderTestGrid(set);}
-function showTest(id,set){
-  const tests=SKILL_TESTS;
-  state.currentTest=tests.find(t=>t.id===id);state.currentTestSet=set;
-  state.currentScore=null;state.currentResponse=null;state.currentAutoScore=null;
-  const t=state.currentTest;const res=state.results[id];
-  document.getElementById('tab-content-'+set).classList.add('hidden');
-  document.getElementById('test-detail').style.display='block';
-  document.getElementById('detail-name').textContent=t.name;
-  document.getElementById('detail-id').textContent=t.id+' · '+t.tags.join(', ');
-  document.getElementById('detail-system').textContent=t.system;
-  document.getElementById('detail-user').textContent=t.user;
-  document.getElementById('detail-criteria').innerHTML=t.criteria.map(c=>
-    `<div class="criteria-item"><span class="criteria-weight">${c.weight}</span><span class="criteria-text">${escHtml(c.text)}</span></div>`).join('');
-  document.getElementById('run-btn').disabled=false;document.getElementById('run-btn').textContent='▶ RUN TEST';
-  document.getElementById('right-placeholder').style.display='block';
-  document.getElementById('run-error-msg').style.display='none';
-  if(res?.llm_response){
-    state.currentResponse=res.llm_response;
-    document.getElementById('response-box').textContent=res.llm_response;
-    document.getElementById('response-section').style.display='block';
-    document.getElementById('score-section').style.display='block';
-    document.getElementById('as-loading').style.display='none';
-    if(res.auto_score){
-      state.currentAutoScore=res.auto_score;
-      renderAutoScore(res.auto_score, state.currentTest.criteria);
-    }
-    setScore(res.score,false);document.getElementById('notes-input').value=res.notes||'';
-    document.getElementById('status-msg').textContent='Previous result loaded';
-  }else{
-    document.getElementById('response-section').style.display='none';
-    document.getElementById('score-section').style.display='none';
-    document.getElementById('status-msg').textContent='';
-  }
-}
-function backToTests(){
-  document.getElementById('test-detail').style.display='none';
-  document.getElementById('tab-content-'+state.currentTestSet).classList.remove('hidden');
-}
-async function runTest(){
-  const t=state.currentTest;const btn=document.getElementById('run-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Running...';
-  document.getElementById('run-error-msg').style.display='none';
-  document.getElementById('response-section').style.display='none';document.getElementById('score-section').style.display='none';
-  try{
-    const r=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),credentials:'include',
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1024,system:t.system,messages:[{role:'user',content:t.user}]})});
-    const data=await r.json();
-    if(!r.ok || data.type==='error'){
-      const msg = data?.error?.message || data?.error || `HTTP ${r.status}`;
-      throw new Error(msg);
-    }
-    const text=data.content?.[0]?.text||JSON.stringify(data);
-    state.currentResponse=text;
-    document.getElementById('response-box').textContent=text;
-    document.getElementById('response-section').style.display='block';
-    document.getElementById('score-section').style.display='block';
-    document.getElementById('as-loading').style.display='block';
-    document.getElementById('as-result').style.display='none';
-    document.getElementById('right-placeholder').style.display='none';
-    btn.textContent='▶ RE-RUN TEST';btn.disabled=false;
-    autoScoreTest(text, state.currentTest.criteria);
-  }catch(e){
-    const errDiv=document.getElementById('run-error-msg');
-    const msg = typeof e === 'string' ? e
-      : e?.error?.message || e?.message || e?.error || JSON.stringify(e);
-    errDiv.textContent='Error: '+msg;
-    errDiv.style.display='block';
-    btn.textContent='▶ RUN TEST';btn.disabled=false;
-  }
-}
-async function autoScoreTest(llmResponse, criteria) {
-  try {
-    const r = await fetch(`${API}/score-response`, {
-      method:'POST', headers:headers(),
-      body:JSON.stringify({llm_response:llmResponse, criteria})
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    state.currentAutoScore = d.auto_score;
-    renderAutoScore(d.auto_score, criteria);
-    // Pre-select the grade from auto-score
-    const gradeMap = {PASS:'pass', PARTIAL:'partial', FAIL:'fail'};
-    const mapped = gradeMap[d.auto_score.score] || 'fail';
-    setScore(mapped);
-  } catch(e) {
-    const msg = e?.error?.message || e?.message || String(e);
-    document.getElementById('as-loading').textContent = 'Auto-score failed: ' + msg;
-  }
-}
-function renderAutoScore(as, criteria) {
-  document.getElementById('as-loading').style.display = 'none';
-  document.getElementById('as-result').style.display = 'block';
-  const gradeEl = document.getElementById('as-grade-val');
-  gradeEl.textContent = as.score || '—';
-  gradeEl.className = `as-grade ${as.score || ''}`;
-  document.getElementById('as-req-val').textContent = `${as.required_met ?? '—'}/${as.required_total ?? '—'}`;
-  document.getElementById('as-bonus-val').textContent = as.bonus_met ?? '—';
-  document.getElementById('as-conf-val').textContent = as.confidence || '—';
-  document.getElementById('as-summary-text').textContent = as.summary || '';
-  const list = document.getElementById('as-criteria-list');
-  list.innerHTML = (as.criteria_results || []).map(cr => {
-    const c = criteria[cr.index - 1] || {};
-    const cls = cr.met ? 'met' : c.weight === 'bonus' ? 'bonus' : 'unmet';
-    return `<div class="as-criterion ${cls}">
-      <span class="as-check">${cr.met ? '✓' : '✗'}</span>
-      <div><div>[${(c.weight||'').toUpperCase()}] ${escHtml(c.text||'')}</div><div class="as-note">${escHtml(cr.note||'')}</div></div>
-    </div>`;
-  }).join('');
-}
-function setScore(score,updateUI=true){
-  state.currentScore=score;
-  if(!updateUI)return;
-  ['pass','partial','fail'].forEach(s=>{const b=document.getElementById('btn-'+s);b.className='score-btn';if(s===score)b.classList.add('selected',s);});
-}
-async function saveResult(){
-  if(!state.currentScore){document.getElementById('status-msg').textContent='Select a score first';return;}
-  try{
-    const r=await fetch(`${API}/results`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({
-      test_id:state.currentTest.id,score:state.currentScore,
-      notes:document.getElementById('notes-input').value.trim(),
-      criteria:state.currentTest.criteria,llm_response:state.currentResponse
-    })});
-    if(!r.ok)throw new Error((await r.json()).error);
-    state.results[state.currentTest.id]={test_id:state.currentTest.id,score:state.currentScore,llm_response:state.currentResponse};
-    document.getElementById('status-msg').textContent='✓ Saved';
-    renderTestGrid('skills');
-  }catch(e){document.getElementById('status-msg').textContent='Error: '+e.message;}
-}
 function showTab(tab){
-  ['skills','live','results','admin'].forEach(t=>{
+  ['results','admin','evpn'].forEach(t=>{
     document.getElementById('tab-content-'+t)?.classList.add('hidden');
     document.getElementById('tab-'+t)?.classList.remove('active');
   });
-  document.getElementById('test-detail').style.display='none';
   document.getElementById('tab-content-'+tab)?.classList.remove('hidden');
   document.getElementById('tab-'+tab)?.classList.add('active');
-  if(tab==='live'){loadFaults();loadLiveHistory();}
-  if(tab==='skills')loadResults().then(()=>renderTestGrid('skills'));
   if(tab==='results')loadResultsTab();
-  if(tab==='admin'){loadAdminData();loadSkillsStatus();}
+  if(tab==='admin'){loadAdminData();}
+  if(tab==='evpn')renderEvpnTab();
 }
 async function loadResultsTab(){
   await loadResults();
@@ -762,7 +468,7 @@ async function loadResultsTab(){
 }
 async function loadAdminData(){
   try{
-    const tr=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1,messages:[{role:'user',content:'hi'}]})});
+    const tr=await fetch(`${API}/run-test`,{method:'POST',headers:headers(),credentials:'include',body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1,messages:[{role:'user',content:'hi'}]})});
     document.getElementById('apikey-status').textContent=tr.status===503?'✗ Not set':'✓ Configured';
     document.getElementById('apikey-status').style.color=tr.status===503?'var(--red)':'var(--green)';
   }catch{}
@@ -795,7 +501,7 @@ async function createUser(){
   const d=await r.json();
   if(!r.ok){out.textContent='Error: '+d.error;out.style.color='var(--red)';}
   else{out.textContent='✓ Created: '+d.username+' ('+d.role+')';out.style.color='var(--green)';
-    document.getElementById('new-username').value='';document.getElementById('new-password').value='';
+    document.getElementById('new-username').value='';
     loadAdminData();}
 }
 async function updateRole(id,role){
@@ -814,877 +520,460 @@ async function deleteUser(id,name){
   loadAdminData();
 }
 function exportData(){window.open(`${API}/admin/export`,'_blank');}
-// ── Skill Optimizer ────────────────────────────────────────────────────────
-let optimizeState = { patch: null, skillName: null, runId: null };
-
-async function openOptimizeModal() {
-  const runId = liveState.currentRunId;
-  if (!runId) return;
-  document.getElementById('optimize-modal').classList.add('active');
-  document.getElementById('optimize-modal-footer').style.display = 'none';
-  // Reset title and status from any previous patch session
-  const mt = document.getElementById('optimize-modal').querySelector('.modal-title');
-  if (mt) { mt.textContent = '◈ SKILL OPTIMIZER'; mt.style.color = ''; }
-  const os = document.getElementById('optimize-status');
-  if (os) { os.textContent = ''; os.style.color = ''; }
-  const rerunBtn = document.getElementById('btn-rerun-after-patch');
-  if (rerunBtn) rerunBtn.style.display = 'none';
-  const acceptBtn = document.getElementById('btn-accept-skill');
-  if (acceptBtn) { acceptBtn.disabled = false; acceptBtn.textContent = '✓ APPLY PATCH'; }
-  document.getElementById('optimize-modal-body').innerHTML =
-    '<div style="color:var(--text-dim);font-size:12px"><span class="spinner"></span> Analyzing failure and generating skill improvements...</div>';
-  try {
-    const r = await fetch(`${API}/skill/optimize`, {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ run_id: runId })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    optimizeState.patch = d.improved_skill;
-    optimizeState.skillName = d.skill_name;
-    optimizeState.runId = runId;
-    renderOptimizeDiff(d);
-    document.getElementById('optimize-modal-footer').style.display = 'flex';
-    document.getElementById('btn-rerun-after-patch').style.display = 'none';
-    document.getElementById('optimize-status').textContent = '';
-  } catch(e) {
-    document.getElementById('optimize-modal-body').innerHTML =
-      `<div style="color:var(--red);font-size:12px">Error: ${escHtml(e.message)}</div>`;
-  }
-}
-
-function renderOptimizeDiff(d) {
-  const body = document.getElementById('optimize-modal-body');
-  // Analysis
-  let html = `<div class="section-header" style="margin-bottom:10px">▸ WHY IT FAILED</div>
-    <div class="opt-analysis">${escHtml(d.analysis || '')}</div>`;
-  // Changes summary
-  if (d.changes?.length) {
-    html += `<div class="section-header" style="margin-bottom:8px">▸ PROPOSED CHANGES</div>
-      <div class="opt-changes">` +
-      d.changes.map(c => `<div class="opt-change">
-        <span class="opt-change-type ${c.type}">${c.type.toUpperCase()}</span>
-        <strong>${escHtml(c.section)}</strong> — ${escHtml(c.reason)}
-      </div>`).join('') + `</div>`;
-  }
-  // Diff view
-  html += `<div class="section-header" style="margin-bottom:8px">▸ SKILL DIFF</div>
-    <div class="diff-view" style="background:var(--bg);border:1px solid var(--border);padding:12px;max-height:400px;overflow-y:auto">`;
-  const oldLines = (d.original_skill || '').split('\n');
-  const newLines = (d.improved_skill || '').split('\n');
-  // Simple line diff — mark added/removed lines
-  const oldSet = new Set(oldLines);
-  const newSet = new Set(newLines);
-  // Show new content with added lines highlighted
-  html += newLines.map(line => {
-    if (!oldSet.has(line) && line.trim()) {
-      return `<div class="diff-add">+ ${escHtml(line)}</div>`;
-    }
-    return `<div class="diff-same">  ${escHtml(line)}</div>`;
-  }).join('');
-  // Show removed lines
-  const removedLines = oldLines.filter(l => !newSet.has(l) && l.trim());
-  if (removedLines.length) {
-    html += removedLines.map(l => `<div class="diff-remove">- ${escHtml(l)}</div>`).join('');
-  }
-  html += `</div>`;
-  body.innerHTML = html;
-}
-
-async function acceptSkillPatch() {
-  if (!optimizeState.patch || !optimizeState.skillName) return;
-  const btn = document.getElementById('btn-accept-skill');
-  btn.disabled = true; btn.textContent = 'Applying...';
-  document.getElementById('optimize-status').textContent = '';
-  try {
-    const r = await fetch(`${API}/skill/${optimizeState.skillName}`, {
-      method: 'PATCH', headers: headers(),
-      body: JSON.stringify({ content: optimizeState.patch, run_id: optimizeState.runId })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    btn.textContent = '✓ APPLIED';
-    const repoMsg = d.committed ? ` · pushed to repo` : '';
-    document.getElementById('optimize-status').textContent = `Skill "${optimizeState.skillName}" updated${repoMsg}`;
-    document.getElementById('optimize-status').style.color = 'var(--green)';
-    document.getElementById('btn-rerun-after-patch').style.display = 'block';
-    const mt=document.getElementById("optimize-modal").querySelector(".modal-title");
-    mt.textContent="\u2713 SKILL PATCHED \u2014 Click RE-RUN TEST to verify fix";
-    mt.style.color="var(--green)";
-  } catch(e) {
-    document.getElementById('optimize-status').textContent = 'Error: ' + (e?.message || String(e));
-    document.getElementById('optimize-status').style.color = 'var(--red)';
-    btn.disabled = false; btn.textContent = '✓ APPLY PATCH';
-  }
-}
-
-async function rerunAfterPatch() {
-  // Close modal and go straight through inject → run with fresh skill from disk
-  const faultId = liveState.currentFault?.id;
-  closeOptimizeModal();
-  if (!faultId) return;
-
-  // Step 1: Re-inject the fault (lab may have been restored)
-  document.getElementById('phase-inject').classList.remove('hidden');
-  document.getElementById('phase-run').classList.add('hidden');
-  document.getElementById('phase-results').classList.add('hidden');
-
-  const injectBtn = document.getElementById('inject-btn');
-  injectBtn.disabled = true;
-  injectBtn.innerHTML = '<span class=spinner></span> Re-injecting fault...';
-  document.getElementById('inject-status').textContent = '✓ Skill updated — re-injecting fault with patched skill...';
-
-  try {
-    const ir = await fetch(`${API}/live/inject`, {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ fault_id: faultId })
-    });
-    const id = await ir.json();
-    if (!ir.ok) throw new Error(id.error);
-    liveState.currentRunId = id.run_id;
-
-    // Step 2: Immediately run LLM with fresh skill content from disk
-    document.getElementById('phase-inject').classList.add('hidden');
-    document.getElementById('phase-run').classList.remove('hidden');
-    const rerunModel = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
-    const rerunLabel = rerunModel.startsWith('claude') ? 'Claude' : rerunModel.split(':')[0].toUpperCase();
-    document.getElementById('run-status').textContent = `✓ Fault re-injected — running ${rerunLabel} with updated skill...`;
-    await runLLM();
-  } catch(e) {
-    document.getElementById('inject-status').textContent = 'Re-inject error: ' + e.message;
-    injectBtn.disabled = false;
-    injectBtn.textContent = '⚡ INJECT FAULT AGAIN';
-  }
-}
-
-async function loadSkillsStatus() {
-  const el = document.getElementById('skills-repo-status');
-  if (!el) return;
-  try {
-    const r = await fetch(`${API}/skills/status`, { headers: headers() });
-    const d = await r.json();
-    if (!d.configured) {
-      el.innerHTML = '<span style="color:var(--text-dim)">Not configured — set SKILLS_REPO in .env</span>';
-      return;
-    }
-    const syncedAgo = d.last_sync ? `Last synced: ${d.last_sync}` : 'Not yet synced';
-    el.innerHTML = `
-      <div>Repo: <span style="color:var(--accent)">${escHtml(d.repo || '')}</span> (${escHtml(d.branch || 'main')})</div>
-      <div style="margin-top:3px">${syncedAgo} · ${d.skills_count} skills loaded</div>
-      ${d.last_commit ? `<div style="margin-top:3px;color:var(--text-dim)">Commit: ${escHtml(d.last_commit)} — ${escHtml(d.last_message || '')}</div>` : ''}
-    `;
-  } catch(e) {
-    el.textContent = 'Error: ' + (e.message || String(e));
-  }
-}
-
-async function syncSkills() {
-  const btn = document.getElementById('btn-sync-skills');
-  const status = document.getElementById('sync-status');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Syncing...';
-  status.textContent = '';
-  try {
-    const r = await fetch(`${API}/skills/sync`, { method: 'POST', headers: { ...headers(), 'X-Admin-Password': getAdminPw() } });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    status.textContent = `✓ ${d.skills_count} skills synced — ${d.message}`;
-    status.style.color = 'var(--green)';
-    loadSkillsStatus();
-  } catch(e) {
-    status.textContent = 'Error: ' + (e?.error?.message || e?.message || String(e));
-    status.style.color = 'var(--red)';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '↓ SYNC FROM REPO';
-  }
-}
-
-function closeOptimizeModal() {
-  document.getElementById('optimize-modal').classList.remove('active');
-  optimizeState = { patch: null, skillName: null, runId: null };
-}
-
-const SKILL_TESTS = [
-
-  // ═══════════════════════════════════════════
-  // ARISTA EOS
-  // ═══════════════════════════════════════════
-
-  {id:'AR-BGP-01', name:'Arista BGP Session States & Diagnosis',
-   tags:['arista','bgp'],
-   system:'You are a network engineer specializing in Arista EOS. Answer concisely using EOS-specific commands and behavior.',
-   user:'On an Arista EOS device, a BGP peer is stuck in the Active state. Walk through your diagnosis steps using EOS-specific commands. What EOS-specific pitfalls could cause this?',
-   criteria:[
-     {weight:'required', text:'Uses show bgp summary and show bgp neighbors <IP> to diagnose'},
-     {weight:'required', text:'Identifies MD5 auth mismatch as a cause of Active/Idle loop on EOS'},
-     {weight:'required', text:'Mentions show bgp neighbors <IP> | json for structured output'},
-     {weight:'bonus', text:'Notes service routing protocols model multi-agent required for EVPN/SR features'},
-   ]},
-
-  {id:'AR-BGP-02', name:'Arista BGP ECMP and Path Selection',
-   tags:['arista','bgp'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'Traffic on an Arista spine is not load-balancing across two BGP paths to the same prefix. Both paths appear in show bgp. What is the most likely EOS-specific cause and fix?',
-   criteria:[
-     {weight:'required', text:'Identifies maximum-paths not configured — EOS installs only 1 path by default'},
-     {weight:'required', text:'Mentions maximum-paths under router bgp address-family'},
-     {weight:'bonus', text:'Notes update-wait-install / update-wait-convergence as convergence pitfalls in large fabrics'},
-     {weight:'bonus', text:'Mentions graceful-restart mismatch causing resets'},
-   ]},
-
-  {id:'AR-EVPN-01', name:'Arista EVPN Troubleshooting Workflow',
-   tags:['arista','evpn','vxlan'],
-   system:'You are a network engineer specializing in Arista EOS EVPN/VXLAN fabrics.',
-   user:'A MAC address is not being learned across the EVPN fabric on Arista EOS. Walk through your EVPN troubleshooting workflow using EOS-specific commands.',
-   criteria:[
-     {weight:'required', text:'Checks BGP EVPN overlay session state first'},
-     {weight:'required', text:'Verifies Type-2 route advertisement using show bgp evpn route-type mac-ip'},
-     {weight:'required', text:'Checks VXLAN data-plane with show vxlan vtep or show vxlan address-table'},
-     {weight:'bonus', text:'Mentions redistribute learned under MAC-VRF required for local MACs'},
-     {weight:'bonus', text:'Notes vxlan virtual-router encapsulation mac-address mlag-system-id for MLAG pairs'},
-   ]},
-
-  {id:'AR-EVPN-02', name:'Arista EVPN RT Import/Export',
-   tags:['arista','evpn'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'EVPN routes are being advertised from one Arista leaf but not imported on another. Both BGP sessions are Established. What do you check?',
-   criteria:[
-     {weight:'required', text:'Checks RT export value on originating leaf'},
-     {weight:'required', text:'Checks RT import policy on receiving leaf'},
-     {weight:'required', text:'Verifies RT values match between VRFs or MAC-VRFs'},
-     {weight:'bonus', text:'Explains auto-derived RT (ASN:VNI) vs manual RT'},
-   ]},
-
-  {id:'AR-VXLAN-01', name:'Arista VXLAN Data-Plane Pitfalls',
-   tags:['arista','vxlan'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'VXLAN unicast forwarding is broken between two Arista VTEPs even though BGP EVPN shows the correct routes. What EOS-specific data-plane issues should you check?',
-   criteria:[
-     {weight:'required', text:'Checks VTEP source loopback reachability in underlay'},
-     {weight:'required', text:'Verifies VNI to VLAN mapping is consistent across VTEPs'},
-     {weight:'required', text:'Checks underlay MTU is at least 1550 (VXLAN adds 50 bytes)'},
-     {weight:'bonus', text:'Notes MLAG requires shared anycast VTEP IP on common loopback'},
-     {weight:'bonus', text:'Warns against mixing static vxlan flood vtep with EVPN on same VNI'},
-   ]},
-
-  {id:'AR-OSPF-01', name:'Arista OSPF Adjacency Failures',
-   tags:['arista','ospf'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'An OSPF adjacency on Arista EOS is stuck in ExStart. What are the likely causes and how do you diagnose each?',
-   criteria:[
-     {weight:'required', text:'Identifies MTU mismatch as primary ExStart cause on EOS'},
-     {weight:'required', text:'Checks hello/dead timer mismatch'},
-     {weight:'required', text:'Verifies area type and authentication match'},
-     {weight:'bonus', text:'Mentions ip ospf area under interface can override router ospf area assignment'},
-     {weight:'bonus', text:'Notes passive interface misconfiguration blocks adjacency formation'},
-   ]},
-
-  {id:'AR-ISIS-01', name:'Arista IS-IS Troubleshooting',
-   tags:['arista','isis'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'An IS-IS adjacency on Arista EOS is cycling. Walk through diagnosis. What are EOS-specific IS-IS pitfalls?',
-   criteria:[
-     {weight:'required', text:'Checks adjacency state with show isis neighbors'},
-     {weight:'required', text:'Verifies NET address uniqueness and area address match'},
-     {weight:'required', text:'Checks level mismatch (EOS defaults interfaces to Level 1-2)'},
-     {weight:'bonus', text:'Mentions address-family ipv4/ipv6 unicast must be configured under IS-IS'},
-     {weight:'bonus', text:'Notes set-overload-bit on-startup wait-for-bgp delays clearing overload bit'},
-   ]},
-
-  {id:'AR-BFD-01', name:'Arista BFD Session Flapping',
-   tags:['arista','bfd'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'BFD sessions are flapping on an Arista EOS device, causing BGP and OSPF resets. Walk through diagnosis. What EOS-specific pitfalls apply?',
-   criteria:[
-     {weight:'required', text:'Checks BFD timer values — aggressive timers (100ms x3) may not be sustainable under load'},
-     {weight:'required', text:'Verifies BFD is bound to the correct protocol (neighbor <IP> bfd for BGP, bfd interval for OSPF)'},
-     {weight:'required', text:'Checks hardware offload for BFD on high-scale deployments'},
-     {weight:'bonus', text:'Notes BFD echo mode must be consistent on both sides'},
-     {weight:'bonus', text:'Mentions BFD on MLAG peer-link is unsupported — use MLAG peer keepalive instead'},
-   ]},
-
-  {id:'AR-COPP-01', name:'Arista Control Plane Policing',
-   tags:['arista','copp'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'BGP sessions on an Arista spine are flapping intermittently. CPU load is high. How do you determine if CoPP is involved and what do you check?',
-   criteria:[
-     {weight:'required', text:'Checks show platform trident counters cpu forwarding profile to identify CPU queue drops'},
-     {weight:'required', text:'Correlates drop timing with BGP flap events'},
-     {weight:'required', text:'Identifies which CoPP class is being exceeded'},
-     {weight:'bonus', text:'Notes default CoPP policy may be too aggressive for large-scale BGP deployments'},
-     {weight:'bonus', text:'Mentions ARP storms can overwhelm ARP CoPP class'},
-   ]},
-
-  {id:'AR-QOS-01', name:'Arista QoS Classification and Trust',
-   tags:['arista','qos'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'Latency-sensitive traffic on an Arista EOS device is not getting priority treatment. Walk through QoS diagnosis. What are EOS-specific trust and classification behaviors?',
-   criteria:[
-     {weight:'required', text:'Checks QoS policy applied to interface with show qos interface <intf>'},
-     {weight:'required', text:'Verifies DSCP classification/marking is correct'},
-     {weight:'required', text:'Notes EOS trusts CoS on trunk ports, DSCP on routed ports by default'},
-     {weight:'bonus', text:'Explains EOS applies QoS at egress by default'},
-     {weight:'bonus', text:'Notes ECMP may not be QoS-aware — latency flows may share bulk links'},
-   ]},
-
-  {id:'AR-SR-01', name:'Arista Segment Routing Configuration',
-   tags:['arista','segment-routing','mpls'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'Segment Routing is configured on Arista EOS but SR labels are not being programmed. What are the required configuration steps and common pitfalls?',
-   criteria:[
-     {weight:'required', text:'segment-routing mpls must be enabled globally and under the IGP'},
-     {weight:'required', text:'SRGB range: EOS default is 16000-23999 — must not conflict'},
-     {weight:'required', text:'Prefix-SID must be advertised under the loopback in IS-IS or OSPF'},
-     {weight:'bonus', text:'TI-LFA: fast-reroute ti-lfa must be explicitly enabled under IGP'},
-     {weight:'bonus', text:'SR coexistence with LDP: verify sr-prefer if SR should win over LDP'},
-   ]},
-
-  {id:'AR-LDP-01', name:'Arista LDP Troubleshooting',
-   tags:['arista','ldp','mpls'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'LDP session between two Arista EOS nodes will not establish. Walk through diagnosis steps and EOS-specific requirements.',
-   criteria:[
-     {weight:'required', text:'Verifies mpls ip is enabled globally on EOS'},
-     {weight:'required', text:'Checks mpls ldp interface <intf> configured on required interfaces'},
-     {weight:'required', text:'Verifies transport address matches IGP router-id loopback'},
-     {weight:'bonus', text:'Confirms LDP router-id is reachable via IGP on both sides'},
-   ]},
-
-  {id:'AR-L1-01', name:'Arista Layer 1 Interface Diagnosis',
-   tags:['arista','layer1'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'An Arista EOS interface is up/up but showing CRC errors. Walk through Layer 1 diagnosis using EOS-specific commands and DOM data.',
-   criteria:[
-     {weight:'required', text:'Checks show interfaces <intf> counters errors for CRC, input errors, FCS'},
-     {weight:'required', text:'Checks optical DOM with show interfaces <intf> transceiver detail for Rx/Tx power'},
-     {weight:'required', text:'Determines if errors are directional (Rx vs Tx) to identify faulty end'},
-     {weight:'bonus', text:'Notes err-disabled state detection with show interfaces status err-disabled'},
-   ]},
-
-  {id:'AR-HW-01', name:'Arista Hardware and TCAM Troubleshooting',
-   tags:['arista','hardware'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'Routes are being silently dropped on an Arista EOS device. No software errors visible. What hardware-level issues should you investigate?',
-   criteria:[
-     {weight:'required', text:'Checks TCAM utilization with show platform trident tcam or show platform jericho tcam'},
-     {weight:'required', text:'Looks for >80% utilization as warning threshold'},
-     {weight:'required', text:'Identifies which TCAM resource is exhausted (routes, ACL, MAC, etc.)'},
-     {weight:'bonus', text:'Mentions hitless upgrade state failure can cause double-reload'},
-   ]},
-
-  {id:'AR-MLAG-01', name:'Arista MLAG Troubleshooting',
-   tags:['arista','mlag','campus'],
-   system:'You are a network engineer specializing in Arista EOS.',
-   user:'An Arista MLAG pair is experiencing split-brain. One peer shows MLAG inactive. Walk through diagnosis and the consequences of split-brain.',
-   criteria:[
-     {weight:'required', text:'Checks show mlag detail for peer-link state and keepalive status'},
-     {weight:'required', text:'Verifies peer-link port-channel is up on both sides'},
-     {weight:'required', text:'Explains split-brain: both peers become primary and may forward duplicate traffic'},
-     {weight:'bonus', text:'Notes MLAG peer keepalive uses management interface — separate from peer-link'},
-   ]},
-
-  {id:'AR-L3LS-01', name:'Arista L3LS Fabric Triage',
-   tags:['arista','l3ls','orchestrator'],
-   system:'You are a senior network engineer familiar with Arista L3LS EVPN/VXLAN fabrics.',
-   user:'A host in a leaf-spine L3LS fabric cannot reach a host on a different leaf. Describe the systematic triage approach — which layers do you check first and why?',
-   criteria:[
-     {weight:'required', text:'Checks spine eBGP underlay sessions first (foundation of fabric health)'},
-     {weight:'required', text:'Then checks EVPN overlay BGP session state on the affected leaf'},
-     {weight:'required', text:'Then checks VXLAN data-plane (VTEP reachability, VNI mapping, ARP suppression)'},
-     {weight:'bonus', text:'Distinguishes L2 forwarding failure (Type-2 missing) from L3 routing failure (Type-5/IRB missing)'},
-   ]},
-
-  {id:'AR-L2LS-01', name:'Arista L2LS MLAG and STP',
-   tags:['arista','l2ls','mlag'],
-   system:'You are a network engineer specializing in Arista EOS campus fabrics.',
-   user:'In an Arista L2LS campus fabric, hosts on access leaves cannot reach the distribution layer. MLAG is configured between the spine pair. What is your troubleshooting sequence?',
-   criteria:[
-     {weight:'required', text:'Checks MLAG state on spine pair first (peer-link, keepalive, MLAG domain)'},
-     {weight:'required', text:'Verifies STP is not blocking uplinks — checks root bridge placement'},
-     {weight:'required', text:'Checks port-channel state from access leaves to spine'},
-     {weight:'bonus', text:'Notes STP TCN storms flush MAC tables and can cause temporary flooding'},
-   ]},
-
-  // ═══════════════════════════════════════════
-  // JUNIPER JunOS
-  // ═══════════════════════════════════════════
-
-  {id:'JUN-BGP-01', name:'Juniper BGP Policy and Route Advertisement',
-   tags:['juniper','bgp'],
-   system:'You are a network engineer specializing in Juniper JunOS.',
-   user:'A BGP peer on Juniper JunOS is Established but not receiving any routes. Walk through diagnosis focusing on JunOS-specific policy behavior.',
-   criteria:[
-     {weight:'required', text:'Checks show bgp summary and show bgp neighbor <IP> for session and prefix counts'},
-     {weight:'required', text:'Verifies export policy is configured — JunOS does NOT export routes by default unlike EOS'},
-     {weight:'required', text:'Checks show route advertising-protocol bgp <peer> to see what is being sent'},
-     {weight:'bonus', text:'Uses show route receive-protocol bgp <peer> to verify received routes'},
-     {weight:'bonus', text:'Notes policy-options term with then accept required for BGP export in JunOS'},
-   ]},
-
-  {id:'JUN-BGP-02', name:'Juniper BGP Route Reflection and Cluster ID',
-   tags:['juniper','bgp','mpls'],
-   system:'You are a network engineer specializing in Juniper JunOS.',
-   user:'A Juniper route reflector (rr1) is not reflecting routes to all clients. Diagnose the route reflection configuration.',
-   criteria:[
-     {weight:'required', text:'Checks cluster-id is configured consistently across all RRs'},
-     {weight:'required', text:'Verifies clients are in the correct cluster (group with cluster peer config)'},
-     {weight:'required', text:'Checks no route leaking out to other IBGP peers without reflection'},
-     {weight:'bonus', text:'Notes next-hop-self must be explicit in JunOS iBGP — no automatic behavior (unlike Cisco)'},
-   ]},
-
-  {id:'JUN-EVPN-01', name:'Juniper EVPN VRF-Target and ESI',
-   tags:['juniper','evpn','vxlan'],
-   system:'You are a network engineer specializing in Juniper JunOS EVPN fabrics.',
-   user:'EVPN routes are advertised from a Juniper PE but not imported on the remote PE. What JunOS-specific configuration do you check?',
-   criteria:[
-     {weight:'required', text:'Verifies vrf-target community matches between advertising and importing PEs'},
-     {weight:'required', text:'Checks show bgp summary evpn and show evpn database for route state'},
-     {weight:'bonus', text:'Verifies IRB MAC is consistent across redundant PEs'},
-     {weight:'bonus', text:'Checks ESI is identical on both PEs for multihomed CE — DF election failure causes BUM drops'},
-   ]},
-
-  {id:'JUN-ISIS-01', name:'Juniper IS-IS Wide Metrics and Traffic Engineering',
-   tags:['juniper','isis','mpls'],
-   system:'You are a network engineer specializing in Juniper JunOS.',
-   user:'Juniper IS-IS is configured but SR-TE extensions are not working. What IS-IS configuration is required and what are JunOS-specific pitfalls?',
-   criteria:[
-     {weight:'required', text:'traffic-engineering and wide-metrics-only must be consistent across all nodes'},
-     {weight:'required', text:'family iso must be enabled on all IS-IS interfaces'},
-     {weight:'required', text:'source-packet-routing must be enabled under both protocols isis and protocols mpls for SR'},
-     {weight:'bonus', text:'Notes no-adjacency-down-notification can mask flapping adjacencies in JunOS'},
-   ]},
-
-  {id:'JUN-LDP-01', name:'Juniper LDP Requirements and Pitfalls',
-   tags:['juniper','ldp','mpls'],
-   system:'You are a network engineer specializing in Juniper JunOS.',
-   user:'LDP labels are not being distributed on a Juniper device. Walk through the JunOS-specific requirements for LDP to function.',
-   criteria:[
-     {weight:'required', text:'family mpls must be configured on all transit and loopback interfaces'},
-     {weight:'required', text:'LDP transport address (loopback 0) must be reachable via IGP'},
-     {weight:'required', text:'MTU must accommodate MPLS label stack — default 1500 may be insufficient for jumbo frames'},
-     {weight:'bonus', text:'Checks show ldp session and show ldp neighbor for session state'},
-   ]},
-
-  {id:'JUN-VXLAN-01', name:'Juniper VXLAN Tunnel Endpoint Configuration',
-   tags:['juniper','vxlan','evpn'],
-   system:'You are a network engineer specializing in Juniper JunOS/cRPD.',
-   user:'VXLAN tunnels are not forming on a Juniper QFX or cRPD device. What JunOS-specific configuration is required and what are common pitfalls?',
-   criteria:[
-     {weight:'required', text:'tunnel-endpoint must reference the correct loopback interface'},
-     {weight:'required', text:'On QFX: set vlans <n> vxlan vni <id> or routing-instance BD config required'},
-     {weight:'required', text:'Underlay MTU must be >= 1550 to accommodate VXLAN 50-byte overhead'},
-     {weight:'bonus', text:'Asymmetric vs symmetric IRB must be consistent across all VTEPs'},
-   ]},
-
-  {id:'JUN-QOS-01', name:'Juniper CoS Forwarding Classes and Schedulers',
-   tags:['juniper','qos'],
-   system:'You are a network engineer specializing in Juniper JunOS.',
-   user:'On a Juniper MX, ingress traffic is classified correctly but egress scheduling is not honoring the forwarding class. What JunOS-specific CoS behavior applies?',
-   criteria:[
-     {weight:'required', text:'JunOS applies CoS at egress — ingress classification only determines forwarding class'},
-     {weight:'required', text:'Checks scheduler-map is applied to the correct egress interface'},
-     {weight:'required', text:'Verifies BA classifier is not overriding per-packet DSCP on MX (disable if needed)'},
-     {weight:'bonus', text:'Notes hierarchical schedulers on MX require enhanced-ip chassis mode'},
-     {weight:'bonus', text:'On QFX: limited to 8 queues per port — avoid over-engineering forwarding class sets'},
-   ]},
-
-  {id:'JUN-SR-01', name:'Juniper Segment Routing and cRPD',
-   tags:['juniper','segment-routing','mpls'],
-   system:'You are a network engineer specializing in Juniper JunOS and cRPD.',
-   user:'Segment Routing is not forwarding traffic correctly on a Juniper cRPD node. What are the JunOS/cRPD-specific requirements and pitfalls?',
-   criteria:[
-     {weight:'required', text:'source-packet-routing must be enabled under both protocols isis and protocols mpls'},
-     {weight:'required', text:'On cRPD: SR label programming goes through Linux kernel MPLS — verify with ip -M route'},
-     {weight:'required', text:'SRGB must not overlap between nodes and must be consistent with peers'},
-     {weight:'bonus', text:'SR coexistence with RSVP-TE: verify prefer-srgb if SR should be preferred'},
-   ]},
-
-  {id:'JUN-DC-01', name:'Juniper DC Fabric Triage',
-   tags:['juniper','dc-fabric','orchestrator'],
-   system:'You are a senior network engineer familiar with Juniper cRPD EVPN/VXLAN DC fabrics.',
-   user:'A Juniper cRPD-based DC2 fabric is experiencing inter-rack reachability failures. Describe the systematic triage approach across IS-IS underlay, BGP EVPN overlay, and VXLAN data-plane.',
-   criteria:[
-     {weight:'required', text:'Starts with IS-IS underlay — adjacency state and loopback reachability'},
-     {weight:'required', text:'Then checks BGP EVPN session state and Type-2/3/5 route advertisement'},
-     {weight:'required', text:'Then validates VXLAN data-plane — tunnel endpoint, VNI mapping, MAC table'},
-     {weight:'bonus', text:'Notes cRPD uses Linux kernel MPLS/VXLAN — kernel state must match JunOS protocol state'},
-   ]},
-
-  // ═══════════════════════════════════════════
-  // NOKIA SR-OS
-  // ═══════════════════════════════════════════
-
-  {id:'NK-BGP-01', name:'Nokia SR-OS BGP Configuration Essentials',
-   tags:['nokia','bgp'],
-   system:'You are a network engineer specializing in Nokia SR-OS.',
-   user:'A BGP neighbor on Nokia SR-OS will not establish. Walk through the required SR-OS configuration and common pitfalls.',
-   criteria:[
-     {weight:'required', text:'no shutdown required at both group level and neighbor level'},
-     {weight:'required', text:'Checks group and neighbor config — neighbor inherits group settings but can override'},
-     {weight:'required', text:'Verifies peer-as matches remote AS'},
-     {weight:'bonus', text:'Notes next-hop-self must be explicit in iBGP — no automatic behavior in SR-OS'},
-     {weight:'bonus', text:'Checks route-policy is not rejecting all prefixes (SR-OS requires explicit accept)'},
-   ]},
-
-  {id:'NK-ISIS-01', name:'Nokia SR-OS IS-IS Adjacency and Level Control',
-   tags:['nokia','isis'],
-   system:'You are a network engineer specializing in Nokia SR-OS.',
-   user:'IS-IS adjacency is not forming on a Nokia SR-OS router. What SR-OS-specific configuration and pitfalls should you check?',
-   criteria:[
-     {weight:'required', text:'no shutdown required under IS-IS instance and under each interface'},
-     {weight:'required', text:'level-capability controls L1/L2/L1L2 per interface — default is L1L2 on SR-OS'},
-     {weight:'required', text:'system-id must be unique — derive from loopback IP for consistency'},
-     {weight:'bonus', text:'SR-OS supports multiple IS-IS instances with multi-topology — verify correct instance'},
-   ]},
-
-  {id:'NK-EVPN-01', name:'Nokia SR-OS EVPN Service Configuration',
-   tags:['nokia','evpn','vxlan'],
-   system:'You are a network engineer specializing in Nokia SR-OS EVPN.',
-   user:'EVPN routes are not being advertised from a Nokia SR-OS PE. What SR-OS-specific EVPN configuration is required?',
-   criteria:[
-     {weight:'required', text:'bgp-evpn must be enabled under the service with correct evi and VNI'},
-     {weight:'required', text:'Checks show service id <id> evpn evi for DF status and route advertisement'},
-     {weight:'required', text:'ESI must be identical on both PEs for multihomed CE'},
-     {weight:'bonus', text:'VXLAN: vxlan-instance binding must reference correct service ID and VNI'},
-   ]},
-
-  {id:'NK-SR-01', name:'Nokia SR-OS Segment Routing Essentials',
-   tags:['nokia','segment-routing'],
-   system:'You are a network engineer specializing in Nokia SR-OS.',
-   user:'Segment Routing traffic engineering is not working on Nokia SR-OS. What are the required configuration steps and common pitfalls?',
-   criteria:[
-     {weight:'required', text:'SR must be enabled under protocols isis with source-packet-routing prefix-sid-range'},
-     {weight:'required', text:'SRGB must be configured consistently — verify no overlap between nodes'},
-     {weight:'required', text:'SR-TE policy: verify binding-sid and segment-list are correct'},
-     {weight:'bonus', text:'Notes SR-OS supports both ISIS and OSPF as SR IGP — verify correct protocol enabled'},
-   ]},
-
-  // ═══════════════════════════════════════════
-  // MULTI-VENDOR ORCHESTRATION
-  // ═══════════════════════════════════════════
-
-  {id:'MV-DCI-01', name:'Multi-Vendor DC Interconnect Triage',
-   tags:['multivendor','orchestrator','evpn','mpls'],
-   system:'You are a senior network engineer familiar with multi-vendor DC interconnects (Arista DC1 ↔ Juniper DC2 via MPLS L3VPN PE nodes).',
-   user:'A host in DC1 (Arista EVPN/VXLAN) cannot reach a host in DC2 (Juniper EVPN/VXLAN). The cross-DC path goes through pe1 and pe2 via MPLS L3VPN. Describe your triage sequence across vendors.',
-   criteria:[
-     {weight:'required', text:'Checks intra-DC reachability within each DC first (is the problem DC-local or cross-DC?)'},
-     {weight:'required', text:'Checks EVPN Type-5 route advertisement from DC1 border leaf toward pe1'},
-     {weight:'required', text:'Checks MPLS L3VPN label forwarding between pe1 and pe2'},
-     {weight:'bonus', text:'Notes policy asymmetry as most common cross-vendor failure — one side advertising, other not importing'},
-     {weight:'bonus', text:'Distinguishes MPLS forwarding differences: cRPD kernel MPLS vs EOS hardware MPLS pipeline'},
-   ]},
-
-  {id:'MV-WAN-01', name:'Multi-Vendor WAN BGP Policy Asymmetry',
-   tags:['multivendor','orchestrator','bgp','mpls'],
-   system:'You are a senior network engineer with expertise in multi-vendor WAN (Arista EOS PE/CE + Juniper cRPD P/PE/RR backbone).',
-   user:'Customer routes are visible on Arista PE1 but not being installed on Juniper PE2. BGP VPNv4 sessions are Established. What cross-vendor issues should you investigate?',
-   criteria:[
-     {weight:'required', text:'Checks RT export on Arista PE1 and RT import policy on Juniper PE2'},
-     {weight:'required', text:'Verifies VRF route-distinguisher and route-target are consistent across vendors'},
-     {weight:'required', text:'Checks Juniper PE2 import policy — JunOS requires explicit accept, unlike EOS'},
-     {weight:'bonus', text:'Notes MPLS forwarding differences between cRPD (kernel MPLS) and EOS (hardware ASIC)'},
-     {weight:'bonus', text:'Checks if rr1 (Juniper) is correctly reflecting VPNv4 routes to all PEs'},
-   ]},
-
+const EVPN_NOC_CASES = [{"id":"underlay-neighbor-down","num":"01","domain":"underlay","priority":"P1","name":"Underlay Neighbor Down","prompt":"Alert: dc1-spine1 \u2014 BGP neighbor 10.255.255.1 (dc1-leaf1a Ethernet1) is Idle(NoIf).\nSession has been down for 4 minutes. No other BGP sessions affected.\ndc1-leaf1b, dc1-leaf2a, dc1-leaf2b all Established to dc1-spine1.\nFault timestamp: 2024-03-29T14:22:00Z\nJira ticket: NOC-1041","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent identifies fault on dc1-spine1 Ethernet1 (uplink to dc1-leaf1a)","Agent invokes diagnose-underlay and classifies as bgp-session-fault or physical-link-fault","Agent does NOT invoke EVPN, MLAG, or endpoint skills","RCA names dc1-leaf1a as the affected peer and Ethernet1 as the affected interface","Jira ticket NOC-1041 is referenced in the RCA"],"grader_notes":"Key: only dc1-leaf1a session is affected \u2014 spine1 Et1 is down. Common failure: agent fires evpn.check-control-plane because EVPN routes from leaf1a are also missing."},{"id":"remote-vtep-unreachable","num":"02","domain":"underlay","priority":"P1","name":"Remote VTEP Unreachable","prompt":"Alert: dc1-leaf1a \u2014 VTEP 10.255.1.5 (dc1-leaf2a/dc1-leaf2b pair) is unreachable.\nVXLAN tunnels to dc1-leaf2 pair are down. dc1-spine1 shows dc1-leaf2a BGP (AS65102) sessions down.\nAll other VTEP peers (10.255.1.3 local, dc1-spine1 10.255.0.1) are reachable.\nFault timestamp: 2024-03-29T09:45:00Z\nJira ticket: NOC-1038","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent fires BOTH diagnose-underlay AND evpn.check-control-plane","Agent identifies dc1-leaf2a losing both uplinks (Ethernet1 and Ethernet2) as root cause","EVPN session failures attributed as cascade of underlay failure","Agent does NOT fire VNI/VTEP, MLAG, or endpoint skills","RCA explains VTEP 10.255.1.5 is unreachable because dc1-leaf2a has no underlay path"],"grader_notes":"Cross-domain test. dc1-leaf2a loses both Et1 (to spine1) and Et2 (to spine2). EVPN-CP fires only to confirm cascade, not as root cause."},{"id":"interface-flap-route-loss","num":"03","domain":"underlay","priority":"P1","name":"Interface Flap and Route Loss","prompt":"Alert: dc1-leaf2a \u2014 Ethernet1 (P2P to dc1-spine1 Ethernet3) has flapped 7 times in last 10 minutes.\nBGP prefix count to dc1-spine1 dropped from 3 to 0 prefixes received.\nInterface is currently down. CRC errors incrementing on Ethernet1.\nFault timestamp: 2024-03-29T11:10:00Z\nJira ticket: NOC-1039","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent classifies as physical underlay fault driven by CRC errors and interface flap","Agent does NOT invoke EVPN or endpoint skills","RCA identifies Ethernet1 on dc1-leaf2a as the affected component","Remediation mentions physical inspection (cable or transceiver)","first_fault_signal points to interface flap or CRC increment, not the prefix drop"],"grader_notes":"Prefix drop is cascade of flap. Common failure: agent treats prefix drop as first fault signal instead of the physical interface event."},{"id":"cp-cpu-spike-adjacency","num":"04","domain":"underlay","priority":"P2","name":"Control-Plane CPU Spike and Adjacency Drop","prompt":"Alert: dc1-spine1 \u2014 all 4 BGP adjacencies dropped simultaneously at 16:04:00Z.\nNeighbors affected: dc1-leaf1a (10.255.255.1), dc1-leaf1b (10.255.255.5), dc1-leaf2a (10.255.255.9), dc1-leaf2b (10.255.255.13).\nSessions are recovering but flapping every 2-3 minutes.\nPrometheus shows dc1-spine1 CPU utilization hit 98% at 16:03:47Z.\nFault timestamp: 2024-03-29T16:04:00Z\nJira ticket: NOC-1044","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["evidence.cpu_spike_before_fault is true (CPU spike at 16:03:47 precedes drops at 16:04:00)","diagnose-underlay classifies as control-plane-overload, NOT bgp-session-fault","Agent distinguishes CPU-driven simultaneous drop from physical link fault","Agent does not invoke EVPN, MLAG, or endpoint skills","RCA recommends investigating the CPU spike cause on dc1-spine1"],"grader_notes":"All 4 leaf sessions on spine1 drop together (Et1-4 all shut). CPU spike must precede drops. Common failure: agent treats as multiple independent link faults."},{"id":"evpn-bgp-session-down","num":"05","domain":"overlay-evpn","priority":"P1","name":"EVPN BGP Session Down","prompt":"Alert: dc1-leaf2a \u2014 BGP L2VPN EVPN session to dc1-spine1 (RR, 10.255.0.1) is Connect.\nSession state: Connect (never Established). All underlay IPv4 BGP sessions are Established (dc1-spine1 10.255.255.10, dc1-spine2 10.255.255.12).\nNo EVPN routes received. All VTEP tunnels from dc1-leaf2a are down as a result.\nFault timestamp: 2024-03-29T13:30:00Z\nJira ticket: NOC-1042","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent correctly skips diagnose-underlay (underlay sessions to spine1 and spine2 are Established)","Agent fires evpn.check-control-plane as the first protocol skill","Agent identifies EVPN-OVERLAY-PEERS deactivated under address-family evpn as the fault","RCA distinguishes EVPN session down from underlay BGP session down","VTEP tunnel failures correctly attributed as cascade of EVPN session loss"],"grader_notes":"Underlay is healthy \u2014 diagnose-underlay must NOT fire. Common failure: agent fires diagnose-underlay seeing VTEP tunnels down."},{"id":"evpn-route-withdrawal-flap","num":"06","domain":"overlay-evpn","priority":"P2","name":"EVPN Route Withdrawal Flap","prompt":"Alert: dc1-spine1 (route-reflector) \u2014 EVPN Type-2 routes for VNI 10011 from dc1-leaf1a repeatedly withdrawn and re-advertised.\nRoute count for VNI 10011 has fluctuated between 0 and active MACs 8 times in 15 minutes.\nUnderlay stable. EVPN BGP session dc1-leaf1a \u2192 dc1-spine1 (10.255.0.1) remains Established throughout.\nFault timestamp: 2024-03-29T10:15:00Z\nJira ticket: NOC-1040","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent identifies route withdrawal flap pattern, not a session-down event","Agent uses evpn.check-control-plane to inspect Type-2 route stability for VNI 10011","Agent correctly notes the EVPN session remains Established","Agent does not fire diagnose-underlay, VNI/VTEP, MLAG, or endpoint skills","RCA recommends investigating vxlan vlan 11 vni 10011 binding stability on dc1-leaf1a"],"grader_notes":"EVPN session is up \u2014 VNI 10011 binding was removed and restored. Common failure: agent fires VNI/VTEP checks because it sees VNI 10011 mentioned."},{"id":"missing-type2-route","num":"07","domain":"overlay-evpn","priority":"P1","name":"Missing Type-2 Route (RT Mismatch)","prompt":"Alert: dc1-leaf2a \u2014 hosts in VLAN 11 (VNI 10011) cannot reach hosts on dc1-leaf1a.\ndc1-leaf1a is advertising Type-2 routes for VNI 10011 but dc1-leaf2a has 0 MAC entries for VNI 10011.\nEVPN BGP sessions all Established. Underlay healthy. Local MAC table on dc1-leaf1a shows MACs present.\nA config change was applied to dc1-leaf1a 20 minutes ago.\nFault timestamp: 2024-03-29T08:00:00Z\nJira ticket: NOC-1035","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","evpn.check-vni-and-vtep","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent fires BOTH evpn.check-control-plane AND evpn.check-vni-and-vtep in order","Agent identifies RT mismatch: dc1-leaf1a exporting 10011:99999 instead of 10011:10011","Agent does NOT invoke diagnose-endpoint (MAC is in local table on leaf1a)","correlate-with-change links the config change 20 min ago","RCA names VNI 10011, dc1-leaf1a, and the specific RT value mismatch"],"grader_notes":"MAC is locally present on leaf1a \u2014 must NOT escalate to diagnose-endpoint. Config change 20 min prior must be picked up by correlate-with-change."},{"id":"missing-type5-route","num":"08","domain":"overlay-evpn","priority":"P2","name":"Missing Type-5 Route (L3VPN)","prompt":"Alert: dc1-leaf2a \u2014 VRF VRF11 cannot route to external prefixes. No Type-5 routes for VRF VRF11 being originated.\nL3VNI for VRF11 is 11. All underlay and EVPN BGP sessions are Established.\nL2 within VRF11 (VLAN 21, VLAN 22) working normally on dc1-leaf2a.\nFault timestamp: 2024-03-29T15:00:00Z\nJira ticket: NOC-1045","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent classifies as type5-route-missing","Agent checks redistribute connected config for VRF VRF11 on dc1-leaf1a","Agent does NOT invoke VNI/VTEP checks (Type-5 absence is a control-plane config fault)","RCA identifies missing redistribute connected route-map RM-CONN-2-BGP-VRFS under VRF VRF11","Agent does not confuse Type-5 absence with Type-2 absence"],"grader_notes":"Type-5 absence must be distinguished from Type-2. Cause is missing redistribute statement. Common failure: fires evpn.check-vni-and-vtep seeing L3VNI mentioned."},{"id":"route-target-mismatch","num":"09","domain":"overlay-evpn","priority":"P1","name":"Route-Target Mismatch","prompt":"Alert: dc1-leaf1a \u2014 hosts in VLAN 12 (VNI 10012) cannot communicate with hosts on dc1-leaf2a.\ndc1-leaf2a is advertising Type-2 routes for VNI 10012. dc1-leaf1a has 0 MAC entries for VNI 10012 despite receiving EVPN updates.\nEVPN BGP sessions all Established. Underlay healthy. Config change applied to dc1-leaf2a 30 minutes ago.\nFault timestamp: 2024-03-29T14:00:00Z\nJira ticket: NOC-1043","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent classifies as route-target-mismatch","Agent checks RT import/export on dc1-leaf2a (AS65102) for VLAN 12/VNI 10012","correlate-with-change identifies the config change 30 min ago on dc1-leaf2a as change-induced-medium","Agent does NOT invoke diagnose-endpoint (MAC absence explained by RT mismatch)","RCA names RT 10012:88888 on dc1-leaf2a vs expected 10012:10012 and specifies corrective action"],"grader_notes":"EVPN-CP must reach Step 4 (RT check). 30-min config change must be picked up. Common failure: fires diagnose-endpoint on dc1-leaf1a for 0 MAC entries."},{"id":"vni-not-active-on-leaf","num":"10","domain":"overlay-evpn","priority":"P1","name":"VNI Not Active on Leaf (Dataplane Only)","prompt":"Alert: dc1-leaf1b \u2014 all hosts in VLAN 22 (VNI 10022) are unreachable from remote leaves.\nEVPN BGP sessions all Established. Remote leaves show 0 VTEP entries for dc1-leaf1b VNI 10022.\nOn dc1-leaf1b, VNI 10022 is configured but shows as inactive in the VXLAN VNI table.\nVLAN 22 exists and has active hosts (Port-Channel5). No underlay faults.\nFault timestamp: 2024-03-29T12:00:00Z\nJira ticket: NOC-1041","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-vni-and-vtep","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-control-plane","diagnose-mlag","diagnose-endpoint"],"success_criteria":["Agent fires evpn.check-vni-and-vtep as the first and only protocol skill","Agent does NOT invoke evpn.check-control-plane (sessions are Established; VNI inactive is dataplane)","Agent identifies VNI 10022 as inactive on dc1-leaf1b","RCA distinguishes VNI inactive (dataplane) from EVPN session down (control-plane)","Remediation specifies restoring vxlan vlan 22 vni 10022 binding on dc1-leaf1b"],"grader_notes":"Most precision-sensitive case. VNI/VTEP must fire WITHOUT EVPN-CP. Common failure: agent fires EVPN-CP as default even though VNI inactive state is explicit."},{"id":"peer-link-degradation","num":"11","domain":"mlag","priority":"P1","name":"MLAG Peer-Link Degradation","prompt":"Alert: DC1_L3_LEAF1 MLAG domain (dc1-leaf1a/dc1-leaf1b) \u2014 Port-Channel3 peer-link has lost a member link.\nEthernet3 is down on dc1-leaf1a (one of two Po3 members). Peer-link bandwidth degraded to 50%.\nMLAG domain state remains Active but peer-link utilization at high load is causing intermittent drops.\nPeer-link peer-address: 10.255.1.64 (dc1-leaf1b).\nFault timestamp: 2024-03-29T17:30:00Z\nJira ticket: NOC-1046","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","diagnose-mlag","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-endpoint"],"success_criteria":["Agent fires BOTH diagnose-underlay (for physical member link state) AND diagnose-mlag","diagnose-underlay checks Ethernet3 and Ethernet4 physical state on dc1-leaf1a","diagnose-mlag classifies as peer-link-degraded (not peer-link-down \u2014 domain is still Active)","Agent correctly identifies the lost member (Et3) vs working member (Et4)","RCA identifies peer-link bandwidth reduction and recommends restoring Ethernet3"],"grader_notes":"Dual-skill chain. diagnose-underlay fires for physical member link checking. Common failure: skipping underlay and going directly to diagnose-mlag."},{"id":"mlag-consistency-issue","num":"12","domain":"mlag","priority":"P1","name":"MLAG Consistency Mismatch","prompt":"Alert: DC1_L3_LEAF2 MLAG domain (dc1-leaf2a/dc1-leaf2b) \u2014 MLAG config-sanity reports mismatch on Port-Channel5.\nPeer-link (Port-Channel3) is Up. MLAG domain Active. Dual-homed hosts seeing asymmetric forwarding.\nVLAN 21 missing from allowed VLAN list on dc1-leaf2b Port-Channel5 but present on dc1-leaf2a.\nFault timestamp: 2024-03-29T09:00:00Z\nJira ticket: NOC-1036","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-mlag","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-endpoint"],"success_criteria":["Agent fires diagnose-mlag as the sole protocol skill","Agent does NOT fire diagnose-underlay (peer-link Po3 is explicitly Up)","diagnose-mlag identifies VLAN 21 missing from Port-Channel5 on dc1-leaf2b via mlag config-sanity","Agent correctly attributes asymmetric forwarding to the VLAN trunk mismatch","RCA specifies adding VLAN 21 back to Po5 trunk on dc1-leaf2b as remediation"],"grader_notes":"diagnose-underlay must NOT fire \u2014 peer-link is Up. Config-only MLAG consistency issue on DC1_L3_LEAF2."},{"id":"orphan-port-symptom","num":"13","domain":"mlag","priority":"P2","name":"Orphan Port Symptom (Known 75% Recall Failure)","prompt":"Alert: DC1_L3_LEAF1 (dc1-leaf1a) \u2014 Port-Channel24 with MLAG ID 24 is active on dc1-leaf1a but absent from MLAG interface table on dc1-leaf1b.\nHost connected to Po24 is unreachable from other fabric hosts. MLAG peer-link (Po3) Up. Domain Active.\nMAC only learned on dc1-leaf1a. MLAG domain is DC1_L3_LEAF1.\nFault timestamp: 2024-03-29T10:30:00Z\nJira ticket: NOC-1037","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-mlag","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-endpoint"],"success_criteria":["diagnose-mlag fires and identifies Po24/MLAG-ID 24 as an orphan port on dc1-leaf1a","Agent cross-references Po24 with intent_snapshot to verify single-homing is not intended","RCA identifies missing MLAG configuration on dc1-leaf1b as the fault","Agent does NOT escalate to diagnose-endpoint (host and port are functional)","RCA explains traffic arriving via dc1-leaf1b is dropped (no MLAG entry on peer)"],"grader_notes":"KNOWN RECALL FAILURE (75%). Trigger is subtle: Po24 not in MLAG table on dc1-leaf1b. Common failure: agent invokes diagnose-endpoint seeing MAC not seen on remote."},{"id":"host-not-learning-remote-mac","num":"14","domain":"endpoint","priority":"P1","name":"Host Not Learning Remote MAC (Full Stack)","prompt":"Alert: dc1-leaf1a \u2014 hosts in VLAN 11 (VNI 10011) cannot reach hosts on dc1-leaf2a.\nLocal MAC table on dc1-leaf1a shows local MACs present (VLAN 11). Remote MACs from dc1-leaf2a (VNI 10011) not appearing on dc1-leaf1a.\nEVPN sessions Established. Underlay healthy. RT import on dc1-leaf1a for VNI 10011 was recently modified.\nFault timestamp: 2024-03-29T11:00:00Z\nJira ticket: NOC-1048","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-endpoint","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","diagnose-mlag"],"success_criteria":["Agent fires evpn.check-control-plane, evpn.check-vni-and-vtep, AND diagnose-endpoint in order","Agent finds RT import on dc1-leaf1a changed to 10011:77777 \u2014 blocking dc1-leaf2a Type-2 routes","Agent distinguishes local host (present) from remote host (not learned) correctly","RCA attributes fault to RT import mismatch on dc1-leaf1a for VNI 10011","Agent does not confuse the unreachable remote host with a local endpoint fault"],"grader_notes":"Longest skill chain. Must complete all three protocol skills. Common failure: stopping at EVPN-CP without completing VNI/VTEP and endpoint checks."},{"id":"arp-nd-resolution-failure","num":"15","domain":"endpoint","priority":"P2","name":"ARP/ND Resolution Failure (Known 83% Recall Failure)","prompt":"Alert: dc1-leaf2b \u2014 host in VLAN 21 (VRF VRF11) is unreachable. ARP for host IP shows incomplete in VRF VRF11 ARP table.\nAccess port Ethernet8 on dc1-leaf2b is connected (line protocol up). No EVPN or underlay faults detected.\nNo MAC entry for host in VLAN 21 MAC table.\nFault timestamp: 2024-03-29T13:00:00Z\nJira ticket: NOC-1049","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-endpoint","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag"],"success_criteria":["diagnose-endpoint fires as the first and only protocol skill","Agent identifies ARP incomplete and no MAC as endpoint-side symptom","fault_location is set to endpoint","Agent does NOT invoke EVPN or underlay skills (no fabric fault present)","RCA recommends escalation to server team for dc1-leaf2b Ethernet8 host"],"grader_notes":"KNOWN RECALL FAILURE (83%). Trigger is subtle: ARP incomplete with port up. Common failure: agent fires EVPN-CP to rule out fabric \u2014 precision failure."},{"id":"tenant-reachability-failure","num":"16","domain":"endpoint","priority":"P2","name":"Tenant VRF Reachability Failure","prompt":"Alert: dc1-leaf2a \u2014 VRF VRF11 inter-subnet routing broken. L3VNI for VRF11 (VNI 11) has been removed from Vxlan1.\nType-5 routes for VRF11 are present in BGP RIB. Local host MAC and ARP in VLAN 21 resolved correctly.\nRemote ARP for VRF11 hosts showing incomplete. Underlay healthy.\nFault timestamp: 2024-03-29T14:30:00Z\nJira ticket: NOC-1050","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","diagnose-endpoint","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag"],"success_criteria":["Agent fires evpn.check-control-plane first (L3VNI removal is an EVPN L3 issue)","If EVPN-CP finds L3VNI removed from Vxlan1 on dc1-leaf2a, escalates to diagnose-endpoint","Agent correctly scopes the ARP failure to VRF VRF11 on dc1-leaf2a","RCA identifies missing vxlan vrf VRF11 vni 11 binding on dc1-leaf2a","fault_location correctly identified as fabric (L3VNI misconfiguration)"],"grader_notes":"VRF-aware endpoint diagnosis. Must check EVPN-CP for L3VNI first. Common failure: stops at EVPN-CP finding Type-5 routes present without proceeding to diagnose-endpoint."},{"id":"noisy-logs-single-cause","num":"17","domain":"noisy-evidence","priority":"P1","name":"Noisy Logs \u2014 Single Root Cause","prompt":"Alert: dc1-spine2 \u2014 multiple syslog storms detected. 1,200 log messages in 10 minutes.\nMessages include: repeated BGP notification messages for dc1-leaf2a (10.255.255.10), repeated interface state changes on Ethernet3.\nOnly one BGP session is actually down: dc1-leaf2a (10.255.255.10). All other sessions (dc1-leaf1b, dc1-leaf2b) Established.\nFault timestamp: 2024-03-29T15:30:00Z\nJira ticket: NOC-1051","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["logs.build-evidence sets log_noise_flag=true (1,200 events in window)","logs.build-evidence identifies Ethernet3 state change on dc1-spine2 as first_fault_signal","logs.build-evidence classifies pattern as single-cause (not cascade)","diagnose-underlay classifies as physical-link-fault on dc1-spine2 Ethernet3","Agent correctly filters log noise and does not treat BGP notification storm as separate fault","RCA traces root cause to Ethernet3 (uplink to dc1-leaf2a) on dc1-spine2"],"grader_notes":"Tests logs.build-evidence noise handling. 1,200 events must trigger log_noise_flag. Must identify Ethernet3 state change as first fault signal on dc1-spine2."},{"id":"stale-incomplete-netbox","num":"18","domain":"noisy-evidence","priority":"P2","name":"Stale or Incomplete NetBox Intent","prompt":"Alert: dc1-leaf1b \u2014 host MACs not seen on remote VTEPs from dc1-leaf1b for VLAN 12 (VNI 10012).\nEVPN BGP sessions all Established. Underlay healthy. dc1-leaf1b was re-cabled last week and NetBox may not be fully updated.\nVNI 10012 RT was recently changed on dc1-leaf1b \u2014 current value 10012:55555 vs expected 10012:10012.\nFault timestamp: 2024-03-29T16:00:00Z\nJira ticket: NOC-1052","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["get-intent detects incomplete/inconsistent NetBox data and populates intent_gaps","Agent flags intent_gaps and reduces confidence score accordingly","Agent does NOT treat missing NetBox data as a confirmed network fault","evpn.check-control-plane identifies RT mismatch (10012:55555 vs 10012:10012) on dc1-leaf1b","RCA explicitly calls out NetBox data quality and the RT mismatch as the fault","open_questions in produce-rca output is non-empty referencing NetBox update"],"grader_notes":"Tests get-intent stale data handling combined with real RT mismatch fault. Confidence must be reduced. Hallucination risk: RT values must come from device state not assumed."},{"id":"multi-symptom-one-root-cause","num":"19","domain":"noisy-evidence","priority":"P1","name":"Multi-Symptom \u2014 One Root Cause (Cascade)","prompt":"Alert: fabric-wide \u2014 5 simultaneous alerts at 18:00:05Z:\n[1] dc1-spine1: BGP neighbor dc1-leaf2a (10.255.255.9) is down\n[2] dc1-leaf2a: EVPN Type-2 routes for VNI 10011/10012 withdrawn from all peers\n[3] dc1-leaf2a: VTEP tunnel to dc1-spine1 (10.255.0.1) is down\n[4] dc1-leaf1a: hosts in VLAN 11 cannot reach hosts on dc1-leaf2a\n[5] dc1-leaf1b: hosts in VLAN 11 cannot reach hosts on dc1-leaf2a\nNOC-CR-982 is open for planned maintenance on dc1-leaf2a Ethernet1 starting 18:00:00Z.\nAll other fabric devices are healthy.\nFault timestamp: 2024-03-29T18:00:05Z\nJira ticket: NOC-1053","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-underlay","evpn.check-control-plane","correlate-with-change","produce-rca"],"must_not_invoke":["evpn.check-vni-and-vtep","diagnose-mlag","diagnose-endpoint"],"success_criteria":["logs.build-evidence sets pattern.type=cascade (multiple alerts within 2 seconds)","logs.build-evidence identifies dc1-leaf2a Ethernet1 as the first fault signal","diagnose-underlay fires on dc1-leaf2a and finds Ethernet1 as the root cause","evpn.check-control-plane fires but correctly attributes EVPN withdrawals as cascade","correlate-with-change links NOC-CR-982 maintenance window (change-induced-high)","Agent does NOT fire diagnose-endpoint for alerts 4 and 5","RCA states ONE root cause: Ethernet1 maintenance on dc1-leaf2a"],"grader_notes":"Hardest reasoning case. 5 simultaneous alerts must resolve to ONE root cause: dc1-leaf2a Et1 shutdown matching NOC-CR-982. Common failure: treats each alert as independent."},{"id":"false-positive-endpoint-side","num":"20","domain":"noisy-evidence","priority":"P1","name":"False-Positive Endpoint Side (Known Benchmark Failure)","prompt":"Alert: dc1-leaf1a \u2014 host on Ethernet9 (VLAN 11, VRF VRF10) unreachable from all remote leaves and from local gateway.\nNOC reports host is down for OS upgrade since 17:45:00Z. Ethernet9 shows connected (NIC active, OS not responding).\nIngress counters on Ethernet9 are zero. MAC last seen 22 minutes ago.\nNo EVPN or underlay faults anywhere in dc1 fabric. dc1-spine1/spine2 all sessions Established.\nFault timestamp: 2024-03-29T17:50:00Z\nJira ticket: NOC-1054","expected_skills":["get-intent","get-fabric-state","logs.build-evidence","diagnose-endpoint","correlate-with-change","produce-rca"],"must_not_invoke":["diagnose-underlay","evpn.check-control-plane","evpn.check-vni-and-vtep","diagnose-mlag"],"success_criteria":["Agent fires diagnose-endpoint as the sole protocol skill","diagnose-endpoint observes: Ethernet9 connected, ingress counters zero, no fabric fault","fault_location is classified as endpoint (NOT fabric, NOT indeterminate)","Agent does NOT invoke any fabric protocol skills","RCA explicitly states the fabric is healthy and recommends escalation to server team","RCA notes the OS upgrade context as corroborating evidence"],"grader_notes":"KNOWN BENCHMARK FAILURE. Agent sees host unreachable from all leaves and fires EVPN-CP or VNI/VTEP to rule out fabric \u2014 precision failure. Zero ingress counters = host-silent = endpoint fault."}];
+const EVPN_NOC_LIVE_IDS = {
+  'underlay-neighbor-down':       'evpn-noc-01',
+  'remote-vtep-unreachable':      'evpn-noc-02',
+  'interface-flap-route-loss':    'evpn-noc-03',
+  'cp-cpu-spike-adjacency':       'evpn-noc-04',
+  'evpn-bgp-session-down':        'evpn-noc-05',
+  'evpn-route-withdrawal-flap':   'evpn-noc-06',
+  'missing-type2-route':          'evpn-noc-07',
+  'missing-type5-route':          'evpn-noc-08',
+  'route-target-mismatch':        'evpn-noc-09',
+  'vni-not-active-on-leaf':       'evpn-noc-10',
+  'peer-link-degradation':        'evpn-noc-11',
+  'mlag-consistency-issue':       'evpn-noc-12',
+  'orphan-port-symptom':          'evpn-noc-13',
+  'host-not-learning-remote-mac': 'evpn-noc-14',
+  'arp-nd-resolution-failure':    'evpn-noc-15',
+  'tenant-reachability-failure':  'evpn-noc-16',
+  'noisy-logs-single-cause':      'evpn-noc-17',
+  'stale-incomplete-netbox':      'evpn-noc-18',
+  'multi-symptom-one-root-cause': 'evpn-noc-19',
+  'false-positive-endpoint-side': 'evpn-noc-20',
+};
+const EVPN_DOMAINS=[
+  {key:'underlay',label:'Underlay',color:'var(--accent)'},
+  {key:'overlay-evpn',label:'EVPN Overlay',color:'var(--purple)'},
+  {key:'mlag',label:'MLAG',color:'var(--yellow)'},
+  {key:'endpoint',label:'Endpoint',color:'var(--green)'},
+  {key:'noisy-evidence',label:'Noisy/Evidence',color:'var(--red)'},
 ];
+const EVPN_KNOWN_FAILURES=['orphan-port-symptom','arp-nd-resolution-failure','false-positive-endpoint-side'];
+let evpnState={activeFilter:'',currentCase:null,grades:{}};
 
+function renderEvpnTab(){renderEvpnFilter();renderEvpnGrid();updateEvpnBadge();}
 
-// ── LIVE LAB TEST STATE ──────────────────────────────────────────────────────
-// ── loadFaults: fetch fault list from backend and render cards ──────────────
-async function loadFaults() {
-  try {
-    const r = await fetch(API+'/faults', {headers:headers(), credentials:'include'});
-    if (!r.ok) return;
-    liveState.faults = await r.json();
-    renderFaultGrid();
-  } catch(e) { console.error('loadFaults:', e); }
+function renderEvpnFilter(){
+  const row=document.getElementById('evpn-domain-filter');
+  row.innerHTML=`<button class="filter-btn ${!evpnState.activeFilter?'active':''}" onclick="setEvpnFilter('')">ALL <span style="opacity:.5">${EVPN_NOC_CASES.length}</span></button>`+
+    EVPN_DOMAINS.map(d=>{
+      const cnt=EVPN_NOC_CASES.filter(c=>c.domain===d.key).length;
+      return `<button class="filter-btn ${evpnState.activeFilter===d.key?'active':''}" onclick="setEvpnFilter('${d.key}')" style="${evpnState.activeFilter===d.key?'border-color:'+d.color+';color:'+d.color:''}">
+        ${d.label} <span style="opacity:.5">${cnt}</span></button>`;
+    }).join('');
+}
+function setEvpnFilter(d){evpnState.activeFilter=d;renderEvpnFilter();renderEvpnGrid();}
+function getDomainColor(d){return(EVPN_DOMAINS.find(x=>x.key===d)||{color:'var(--text-dim)'}).color;}
+
+function renderEvpnGrid(){
+  const grid=document.getElementById('evpn-case-grid');
+  const cases=evpnState.activeFilter?EVPN_NOC_CASES.filter(c=>c.domain===evpnState.activeFilter):EVPN_NOC_CASES;
+  grid.innerHTML=cases.map(c=>{
+    const g=evpnState.grades[c.id];
+    const kf=EVPN_KNOWN_FAILURES.includes(c.id);
+    const dl=EVPN_DOMAINS.find(d=>d.key===c.domain)||{label:c.domain};
+    const cls=g?(g.overall?'pass':'fail'):'';
+    return `<div class="test-card ${cls}" onclick="evpnShowCase('${c.id}')">
+      <div class="test-card-id" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:var(--font-mono)">${c.num} &middot; ${c.priority}</span>
+        ${g?`<span class="score-dot ${g.overall?'pass':'fail'}"></span>`:''}
+      </div>
+      <div class="test-card-name" style="margin:6px 0 10px">${escHtml(c.name)}</div>
+      <div class="test-card-tags">
+        <span class="tag" style="border-color:${getDomainColor(c.domain)};color:${getDomainColor(c.domain)}">${dl.label}</span>
+        <span class="tag">&#x25B6; ${c.expected_skills.length} skills</span>
+        <span class="tag" style="color:var(--red)">&#x2717; ${c.must_not_invoke.length} forbidden</span>
+        ${kf?'<span class="tag" style="color:var(--yellow);border-color:var(--yellow)">&#x26A0; Known failure</span>':''}
+      </div>
+      ${g?`<div style="margin-top:8px;font-size:11px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pass-badge ${g.trigger?'ok':'fail'}">Trigger ${g.trigger?'PASS':'FAIL'}</span>
+        <span class="pass-badge ${g.chain?'ok':'fail'}">Chain ${g.chain?'PASS':'FAIL'}</span>
+        <span class="pass-badge ${g.output!==null?(g.output?'ok':'fail'):''}">Output ${g.output===null?'?':(g.output?'PASS':'FAIL')}</span>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+function updateEvpnBadge(){
+  const total=EVPN_NOC_CASES.length,graded=Object.keys(evpnState.grades).length;
+  const passed=Object.values(evpnState.grades).filter(g=>g.overall).length;
+  document.getElementById('evpn-summary-badge').textContent=graded>0?`${passed}/${graded} pass (${total} total)`:`${total} cases`;
+}
+function evpnShowCase(id){
+  const c=EVPN_NOC_CASES.find(x=>x.id===id); if(!c)return;
+  evpnState.currentCase=c;
+  document.getElementById('evpn-case-grid').style.display='none';
+  document.getElementById('evpn-domain-filter').style.display='none';
+  document.getElementById('evpn-detail-panel').style.display='block';
+  const dl=EVPN_DOMAINS.find(d=>d.key===c.domain)||{label:c.domain};
+  document.getElementById('evpn-detail-title').textContent=c.name;
+  document.getElementById('evpn-detail-meta').textContent=`Case ${c.num} \u00b7 ${dl.label} \u00b7 Priority ${c.priority} \u00b7 ${c.id}`;
+  document.getElementById('evpn-alert-box').textContent=c.prompt;
+  const BASE=['get-intent','get-fabric-state','logs.build-evidence','correlate-with-change','produce-rca'];
+  document.getElementById('evpn-skill-chain').innerHTML=c.expected_skills.map((s,i)=>{
+    const col=BASE.includes(s)?'var(--text-dim)':getDomainColor(c.domain);
+    return (i>0?'<span style="color:var(--border3);align-self:center">&#x2192;</span>':'')+
+      `<span class="tool-chip" style="border-color:${col};color:${col}">${s}</span>`;
+  }).join('');
+  document.getElementById('evpn-forbidden-skills').textContent=c.must_not_invoke.join(', ')||'none';
+  document.getElementById('evpn-criteria-list').innerHTML=c.success_criteria.map(cr=>
+    `<div class="criteria-item"><span class="criteria-weight">required</span><span class="criteria-text">${escHtml(cr)}</span></div>`
+  ).join('');
+  document.getElementById('evpn-grader-notes').textContent=c.grader_notes;
+  const sg=evpnState.grades[c.id];
+  document.getElementById('evpn-skills-input').value=sg?.skills_input||'';
+  document.getElementById('evpn-rca-input').value=sg?.rca_input||'';
+  document.getElementById('evpn-notes').value=sg?.notes||'';
+  document.getElementById('evpn-grade-status').textContent='';
+  document.getElementById('evpn-save-status').textContent='';
+  // Reset live panel + mode toggle
+  evpnLive = { runId: null, phase: 'idle' };
+  evpnLiveSetPhase('idle');
+  evpnSetMode('live');
+  elv_status('');
+  const elvResults = document.getElementById('elv-results');
+  if (elvResults) elvResults.style.display = 'none';
+  if(sg)evpnShowScoreSection(sg);else document.getElementById('evpn-score-section').style.display='none';
+}
+function evpnBackToGrid(){
+  document.getElementById('evpn-detail-panel').style.display='none';
+  document.getElementById('evpn-case-grid').style.display='';
+  document.getElementById('evpn-domain-filter').style.display='';
+  renderEvpnGrid();updateEvpnBadge();
+}
+function evpnGradeCase(){
+  const c=evpnState.currentCase; if(!c)return;
+  const raw=document.getElementById('evpn-skills-input').value.trim();
+  if(!raw){document.getElementById('evpn-grade-status').textContent='Enter the skills invoked first.';return;}
+  const actual=raw.split(',').map(s=>s.trim()).filter(Boolean);
+  const expected=c.expected_skills,mustNot=c.must_not_invoke;
+  const missing=expected.filter(s=>!actual.includes(s));
+  const falsePos=mustNot.filter(s=>actual.includes(s));
+  const recall=expected.length>0?(expected.length-missing.length)/expected.length:1;
+  const triggerPass=missing.length===0&&falsePos.length===0;
+  const actualOrdered=actual.filter(s=>expected.includes(s));
+  const expectedFiltered=expected.filter(s=>actual.includes(s));
+  const chainPass=JSON.stringify(actualOrdered)===JSON.stringify(expectedFiltered);
+  const viols=[];
+  if(!chainPass){
+    actualOrdered.forEach((sk,i)=>{
+      const ep=expectedFiltered.indexOf(sk); if(ep<0)return;
+      expectedFiltered.slice(0,ep).forEach(pred=>{
+        if(actualOrdered.includes(pred)&&actualOrdered.indexOf(pred)>i)
+          viols.push(`${sk} before ${pred}`);
+      });
+    });
+  }
+  const g={skills_input:raw,rca_input:document.getElementById('evpn-rca-input').value,notes:document.getElementById('evpn-notes').value,
+    trigger:triggerPass,chain:chainPass,output:null,overall:triggerPass&&chainPass,
+    trigger_detail:{missing,falsePos,recall,precisionPass:falsePos.length===0},
+    chain_detail:{chainViolations:viols,actualOrdered,expectedFiltered}};
+  evpnState.grades[c.id]=g;evpnShowScoreSection(g);
+  document.getElementById('evpn-grade-status').textContent='Trigger + Chain graded. Use LLM-Judge for Output dimension.';
+}
+async function evpnGradeOutput(){
+  const c=evpnState.currentCase; if(!c)return;
+  const rca=document.getElementById('evpn-rca-input').value.trim();
+  if(!rca){document.getElementById('evpn-grade-status').textContent='Paste the agent RCA output first.';return;}
+  const btn=document.getElementById('evpn-llm-grade-btn');
+  btn.disabled=true;btn.textContent='&#x23F3; Judging\u2026';
+  const crit=c.success_criteria.map((cr,i)=>`  ${i+1}. ${cr}`).join('\n');
+  const jp=`You are an expert evaluator for an AI NOC platform diagnosing EVPN datacenter faults.\n\nEVAL CASE: ${c.id}\nALERT:\n${c.prompt}\n\nSUCCESS CRITERIA:\n${crit}\n\nAGENT RCA:\n${rca}\n\nRespond ONLY with valid JSON:\n{"criteria_results":[{"criterion":"...","pass":true,"reason":"..."}],"overall_pass":true,"confidence":"high","reason":"..."}`;
+  try{
+    const resp=await fetch('/api/run-test',{method:'POST',headers:headers(),credentials:'include',
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+        system:'You are a strict NOC eval judge. Respond only with valid JSON as instructed. Be strict: vague or partial satisfaction does not pass.',
+        messages:[{role:'user',content:jp}]})});
+    if(!resp.ok)throw new Error(`API ${resp.status}`);
+    const data=await resp.json();
+    const text=(data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const v=JSON.parse(text);
+    const g=evpnState.grades[c.id]||{skills_input:document.getElementById('evpn-skills-input').value,rca_input:rca,notes:'',trigger:null,chain:null,trigger_detail:{},chain_detail:{}};
+    g.rca_input=rca;g.output=v.overall_pass;g.output_detail=v;
+    g.overall=(g.trigger!==false)&&(g.chain!==false)&&v.overall_pass;
+    evpnState.grades[c.id]=g;evpnShowScoreSection(g);
+    document.getElementById('evpn-grade-status').textContent=`LLM judge complete (confidence: ${v.confidence})`;
+  }catch(e){document.getElementById('evpn-grade-status').textContent=`Judge error: ${e.message}`;}
+  finally{btn.disabled=false;btn.textContent='\u2728 LLM-Judge Output';}
+}
+function evpnShowScoreSection(g){
+  document.getElementById('evpn-score-section').style.display='block';
+  function dimCard(lbl,pass,unknown){
+    const col=unknown?'var(--text-dim)':(pass?'var(--green)':'var(--red)');
+    return `<div class="score-card"><div class="sc-label">${lbl}</div><div class="sc-value" style="color:${col};font-size:20px">${unknown?'?':(pass?'PASS':'FAIL')}</div></div>`;
+  }
+  document.getElementById('evpn-dim-grid').innerHTML=dimCard('Trigger',g.trigger,g.trigger===null)+dimCard('Chain',g.chain,g.chain===null)+dimCard('Output',g.output,g.output===null);
+  const td=g.trigger_detail||{};
+  document.getElementById('evpn-trigger-detail').innerHTML=g.trigger!==null?`<div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Trigger detail</div>
+    <div style="font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;line-height:1.8">
+      Recall: <strong>${((td.recall||0)*100).toFixed(0)}%</strong> &nbsp;|&nbsp; Precision: <strong>${td.precisionPass?'100%':'FAIL'}</strong><br>
+      ${td.missing?.length?`<span style="color:var(--red)">Missing: ${td.missing.join(', ')}</span>`:'<span style="color:var(--green)">All expected skills fired \u2713</span>'}<br>
+      ${td.falsePos?.length?`<span style="color:var(--red)">Forbidden fired: ${td.falsePos.join(', ')}</span>`:'<span style="color:var(--green)">No forbidden skills \u2713</span>'}
+    </div>`:'';
+  const cd=g.chain_detail||{};
+  document.getElementById('evpn-chain-detail').innerHTML=g.chain!==null?`<div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Chain detail</div>
+    <div style="font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;line-height:1.8">
+      ${g.chain?'<span style="color:var(--green)">Correct sequence \u2713</span>':`<span style="color:var(--red)">Ordering violations: ${(cd.chainViolations||[]).join('; ')||'sequence mismatch'}</span>`}
+      <br><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px">
+        Expected: ${(cd.expectedFiltered||[]).join(' \u2192 ')}<br>Actual: ${(cd.actualOrdered||[]).join(' \u2192 ')}
+      </span>
+    </div>`:'';
+  const od=g.output_detail;
+  document.getElementById('evpn-output-detail').innerHTML=od?`<div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Output / RCA quality</div>
+    <div class="as-summary">${escHtml(od.reason||'')} <em style="color:var(--text-dim)">(judge confidence: ${od.confidence})</em></div>
+    <div class="as-criteria">${(od.criteria_results||[]).map(cr=>`<div class="as-criterion ${cr.pass?'met':'unmet'}"><span class="as-check">${cr.pass?'\u2713':'\u2717'}</span><div><div style="font-size:12px">${escHtml(cr.criterion)}</div><div class="as-note">${escHtml(cr.reason)}</div></div></div>`).join('')}</div>`:'';
+  const ov=document.getElementById('evpn-overall-result');
+  const unk=g.output===null;
+  ov.textContent=unk?'PARTIAL \u2014 Run LLM Judge for Output dimension':(g.overall?'\u2713 PASS \u2014 All three dimensions satisfied':'\u2717 FAIL \u2014 See details above');
+  ov.style.color=unk?'var(--yellow)':(g.overall?'var(--green)':'var(--red)');
+  ov.style.borderColor=unk?'var(--yellow)':(g.overall?'var(--green)':'var(--red)');
+}
+function evpnSetMode(mode) {
+  var isLive = mode === 'live';
+  document.getElementById('evpn-live-panel').style.display   = isLive ? '' : 'none';
+  document.getElementById('evpn-manual-panel').style.display = isLive ? 'none' : '';
+  document.getElementById('evpn-mode-live').classList.toggle('active', isLive);
+  document.getElementById('evpn-mode-manual').classList.toggle('active', !isLive);
 }
 
-function renderFaultGrid() {
-  const grid = document.getElementById('fault-grid');
-  const badge = document.getElementById('live-score-badge');
-  if (!grid) return;
-  const faults = liveState.faults;
-  if (!faults.length) {
-    grid.innerHTML = '<div style="color:var(--text-dim);padding:20px">No faults loaded. Check clab host connectivity.</div>';
-    return;
+// ── EVPN NOC Live Run ────────────────────────────────────────────────────────
+let evpnLive = { runId: null, phase: 'idle' };  // phase: idle | injected | running | done
+
+function evpnLiveSetPhase(phase) {
+  evpnLive.phase = phase;
+  document.getElementById('elv-inject-btn').style.display  = phase === 'idle'     ? '' : 'none';
+  document.getElementById('elv-run-wrap').style.display    = phase === 'injected' ? 'flex' : 'none';
+  document.getElementById('elv-rerun-wrap').style.display  = phase === 'done'     ? '' : 'none';
+  document.getElementById('elv-restore-btn').style.display = (phase === 'injected' || phase === 'done') ? '' : 'none';
+}
+
+async function elv_inject() {
+  const c = evpnState.currentCase; if (!c) return;
+  const liveId = EVPN_NOC_LIVE_IDS[c.id];
+  if (!liveId) { elv_status('No live fault script for this case.', 'red'); return; }
+  const btn = document.getElementById('elv-inject-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Injecting…';
+  elv_status('');
+  try {
+    const r = await fetch(API + '/evpn/inject', {
+      method: 'POST', headers: headers(), credentials: 'include',
+      body: JSON.stringify({ fault_id: liveId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'inject failed');
+    evpnLive.runId = d.run_id;
+    elv_status('✓ Fault injected — dc1 is broken', 'green');
+    evpnLiveSetPhase('injected');
+    btn.disabled = false; btn.innerHTML = '⚡ Inject fault';
+  } catch(e) {
+    elv_status('Inject error: ' + e.message, 'red');
+    btn.disabled = false; btn.innerHTML = '⚡ Inject fault';
   }
-  badge.textContent = faults.length + ' faults';
-  const diffColor = {easy:'#68d391', medium:'#ecc94b', hard:'#fc8181'};
-  grid.innerHTML = faults.map(f => `
-    <div class="test-card" onclick="selectFault('${f.id}')" style="cursor:pointer">
-      <div class="test-card-id">${escHtml(f.id)}</div>
-      <div class="test-card-name">${escHtml(f.title||f.id)}</div>
-      <div class="test-card-tags">
-        <span class="tag" style="border-color:${diffColor[f.difficulty]||'#718096'};color:${diffColor[f.difficulty]||'#718096'}">${f.difficulty||'?'}</span>
-        <span class="tag">${escHtml(f.skill||'')}</span>
+}
+
+async function elv_run() {
+  const c = evpnState.currentCase; if (!c || !evpnLive.runId) return;
+  const model = document.getElementById('elv-model').value;
+  const runBtn = document.getElementById('elv-run-btn');
+  const rerunBtn = document.getElementById('elv-rerun-btn');
+  [runBtn, rerunBtn].forEach(b => { if(b){ b.disabled = true; b.innerHTML = '<span class="spinner"></span> Running…'; }});
+  evpnLiveSetPhase('running');
+  elv_status('Running evpn-noc-triage skill against live dc1… (up to 2 min)', 'dim');
+  document.getElementById('elv-results').style.display = 'none';
+  try {
+    const r = await fetch(API + '/evpn/run', {
+      method: 'POST', headers: headers(), credentials: 'include',
+      body: JSON.stringify({ run_id: evpnLive.runId, model })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'run failed');
+    const s = d.auto_score || {};
+    const rawResponse = d.llm_response || '';
+    // Auto-populate manual grade inputs
+    const skillsMatch = rawResponse.match(/SKILLS_INVOKED:\s*(.+)/i);
+    document.getElementById('evpn-skills-input').value = skillsMatch ? skillsMatch[1].trim() : '';
+    document.getElementById('evpn-rca-input').value = rawResponse;
+    evpnGradeCase();
+    const g = evpnState.grades[c.id] || {};
+    // Show results
+    document.getElementById('elv-score-grid').innerHTML =
+      elvScoreCard('Trigger', g.trigger) +
+      elvScoreCard('Chain', g.chain) +
+      elvScoreCard('Score', s.total !== undefined ? s.total + '/100' : '?');
+    document.getElementById('elv-response').textContent = rawResponse;
+    document.getElementById('elv-results').style.display = '';
+    const grade = s.grade || (g.trigger && g.chain ? 'PASS' : 'FAIL');
+    const col = grade==='PASS'?'var(--green)':grade==='PARTIAL'?'var(--yellow)':'var(--red)';
+    elv_status(`<span style="color:${col};font-weight:700">${grade}</span> — ${s.total ?? '?'}/100 — ${(d.duration_ms/1000).toFixed(1)}s`, 'raw');
+    evpnLiveSetPhase('done');
+  } catch(e) {
+    elv_status('Run error: ' + e.message, 'red');
+    evpnLiveSetPhase('injected');
+  }
+  [runBtn, rerunBtn].forEach(b => { if(b){ b.disabled = false; b.textContent = '▶ Run Claude'; }});
+  if(rerunBtn) rerunBtn.textContent = '▶ Re-run';
+}
+
+async function elv_restore() {
+  if (!evpnLive.runId) return;
+  const btn = document.getElementById('elv-restore-btn');
+  btn.disabled = true; btn.textContent = 'Restoring…';
+  elv_status('Restoring dc1 fabric…', 'dim');
+  try {
+    const r = await fetch(API + '/evpn/restore', {
+      method: 'POST', headers: headers(), credentials: 'include',
+      body: JSON.stringify({ run_id: evpnLive.runId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'restore failed');
+    elv_status('✓ dc1 fabric restored', 'green');
+    evpnLive.runId = null;
+    evpnLiveSetPhase('idle');
+  } catch(e) {
+    elv_status('Restore error: ' + e.message, 'red');
+  }
+  btn.disabled = false; btn.textContent = '↺ Restore';
+}
+
+function elv_status(msg, color) {
+  const el = document.getElementById('elv-status');
+  if (!el) return;
+  if (color === 'raw') { el.innerHTML = msg; }
+  else {
+    const c = color==='green'?'var(--green)':color==='red'?'var(--red)':'var(--text-dim)';
+    el.innerHTML = msg ? `<span style="color:${c}">${msg}</span>` : '';
+  }
+}
+
+function elvScoreCard(label, val) {
+  const isStr = typeof val === 'string';
+  const pass = isStr ? null : val;
+  const color = isStr ? 'var(--accent)' : (pass===null ? 'var(--text-dim)' : (pass ? 'var(--green)' : 'var(--red)'));
+  const display = isStr ? val : (pass===null ? '?' : (pass ? 'PASS' : 'FAIL'));
+  return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center">
+    <div style="font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">${label}</div>
+    <div style="font-size:18px;font-weight:700;color:${color}">${display}</div>
+  </div>`;
+}
+
+</script>
+
+
+  <!-- EVPN NOC Tab -->
+  <div id="tab-content-evpn" class="content hidden">
+    <div style="max-width:1200px;margin:0 auto">
+      <div class="page-header">
+        <div class="page-title">EVPN NOC Eval Cases</div>
+        <div class="page-badge" id="evpn-summary-badge">20 cases</div>
+      </div>
+      <div class="info-banner">
+        <strong>dc1 EVPN NOC</strong> &mdash; 20 fault cases: Underlay (4) &middot; EVPN Overlay (6) &middot; MLAG (3) &middot; Endpoint (3) &middot; Noisy/Evidence (4).<br>
+        <strong>&#x26A1; Live mode:</strong> Click a case &rarr; Inject fault into dc1 &rarr; Run Claude with <code>evpn-noc-triage</code> skill &rarr; Auto-scored on Trigger &middot; Chain &middot; Output.<br>
+        <strong>&#x270E; Manual mode:</strong> Paste skills + RCA to grade without injection. Case 20 is the known benchmark failure.
+      </div>
+      <div class="filter-row" id="evpn-domain-filter"></div>
+      <div class="test-grid" id="evpn-case-grid"></div>
+
+      <!-- Detail panel -->
+      <div id="evpn-detail-panel" style="display:none;margin-top:8px">
+        <button class="detail-back" onclick="evpnBackToGrid()">&#x2190; Back to cases</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start">
+          <div>
+            <div class="detail-name" id="evpn-detail-title"></div>
+            <div class="detail-id" id="evpn-detail-meta"></div>
+            <div class="section" style="margin-top:16px">
+              <div class="section-header">Alert prompt</div>
+              <div class="prompt-box" id="evpn-alert-box" style="white-space:pre-wrap;font-size:13px"></div>
+            </div>
+            <div class="section">
+              <div class="section-header">Expected skill chain</div>
+              <div id="evpn-skill-chain" style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px"></div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
+                <span style="color:var(--red);font-weight:600">Must NOT invoke:</span>
+                <span id="evpn-forbidden-skills" style="font-family:var(--font-mono)"></span>
+              </div>
+            </div>
+            <div class="section">
+              <div class="section-header">Success criteria</div>
+              <div class="criteria-list" id="evpn-criteria-list"></div>
+            </div>
+            <div class="section">
+              <div class="section-header">Grader notes</div>
+              <div class="mcp-note" id="evpn-grader-notes" style="font-size:12px;white-space:pre-wrap;line-height:1.6"></div>
+            </div>
+          </div>
+          <div id="evpn-right-panel" style="position:sticky;top:60px">
+
+            <!-- ── Mode Toggle ── -->
+            <div class="eval-mode-bar" style="margin-bottom:14px">
+              <span class="eval-mode-label">Eval mode</span>
+              <div class="eval-toggle">
+                <button class="eval-toggle-opt active" id="evpn-mode-live" onclick="evpnSetMode('live')">&#x26A1; Live Run</button>
+                <button class="eval-toggle-opt" id="evpn-mode-manual" onclick="evpnSetMode('manual')">&#x270E; Manual Grade</button>
+              </div>
+            </div>
+
+            <!-- ── Live Run Panel ── -->
+            <div id="evpn-live-panel" style="margin-bottom:18px">
+              <div class="section-header">&#x26A1; Live lab run</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+                <button class="run-btn" id="elv-inject-btn" onclick="elv_inject()" style="margin-bottom:0">&#x26A1; Inject fault</button>
+                <div id="elv-run-wrap" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
+                  <select id="elv-model" style="font-size:12px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text-bright);border-radius:var(--radius)">
+                    <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                    <option value="claude-opus-4-6">Opus 4.6</option>
+                  </select>
+                  <button class="run-btn" id="elv-run-btn" onclick="elv_run()" style="margin-bottom:0">&#x25B6; Run Claude</button>
+                </div>
+                <div id="elv-rerun-wrap" style="display:none">
+                  <button class="run-btn" id="elv-rerun-btn" onclick="elv_run()" style="margin-bottom:0">&#x25B6; Re-run</button>
+                </div>
+                <button class="action-btn green-btn" id="elv-restore-btn" onclick="elv_restore()" style="display:none;margin-bottom:0">&#x21BA; Restore</button>
+              </div>
+              <div class="status-msg" id="elv-status"></div>
+              <div id="elv-results" style="display:none;margin-top:10px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px" id="elv-score-grid"></div>
+                <div class="response-box" id="elv-response" style="max-height:300px;margin-top:8px;font-size:12px"></div>
+              </div>
+            </div>
+            </div><!-- /evpn-live-panel -->
+
+            <!-- Manual Grade Panel -->
+            <div id="evpn-manual-panel" style="display:none">
+            <div class="section-header">Evaluate this case</div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Skills invoked (comma-separated, in order)</div>
+              <textarea class="notes-input" id="evpn-skills-input" rows="2" placeholder="get-intent, get-fabric-state, logs.build-evidence, diagnose-underlay, correlate-with-change, produce-rca" style="font-family:var(--font-mono);font-size:12px"></textarea>
+            </div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">Agent RCA output</div>
+              <textarea class="notes-input" id="evpn-rca-input" rows="5" placeholder="Paste agent RCA output here to grade..." style="font-family:var(--font-mono);font-size:12px;min-height:120px"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+              <button class="run-btn" onclick="evpnGradeCase()" style="margin-bottom:0">&#x25B6; Grade Trigger + Chain</button>
+              <button class="action-btn yellow-btn" onclick="evpnGradeOutput()" id="evpn-llm-grade-btn">&#x2728; LLM-Judge Output</button>
+            </div>
+            <div class="status-msg" id="evpn-grade-status"></div>
+            <div id="evpn-score-section" style="display:none;margin-top:16px">
+              <div class="section-header">Grading result</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px" id="evpn-dim-grid"></div>
+              <div id="evpn-trigger-detail" style="margin-bottom:10px"></div>
+              <div id="evpn-chain-detail" style="margin-bottom:10px"></div>
+              <div id="evpn-output-detail" style="margin-bottom:10px"></div>
+              <div id="evpn-overall-result" style="text-align:center;font-size:16px;font-weight:800;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);margin-top:12px"></div>
+              <div style="margin-top:12px">
+                <textarea class="notes-input" id="evpn-notes" placeholder="Notes..." rows="2"></textarea>
+                <button class="save-btn" onclick="evpnSaveResult()" style="margin-top:8px">Save result</button></div>
+                <div class="status-msg" id="evpn-save-status"></div>
+              </div>
+            </div>
+            </div><!-- /evpn-manual-panel -->
+          </div>
+        </div>
       </div>
     </div>
-  `).join('');
-}
+  </div>
 
-function selectFault(id) {
-  const f = liveState.faults.find(x => x.id === id);
-  if (!f) return;
-  liveState.currentFault = f;
-  liveState.currentRunId = null;
-
-  // Show the run panel, hide fault grid
-  document.getElementById('fault-grid').style.display = 'none';
-  const panel = document.getElementById('live-run-panel');
-  if (panel) panel.style.display = 'block';
-
-  // Populate panel fields
-  const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val||'—'; };
-  setEl('live-fault-title', f.title || f.id);
-  setEl('live-fault-meta', f.id + ' · ' + (f.difficulty||'') + ' · ' + (f.vendor||'') + ' · device: ' + (f.device||''));
-  setEl('live-device', f.device || '—');
-  setEl('live-symptom', f.symptom || '—');
-  setEl('live-skill', f.skill || '—');
-  setEl('live-optimal', (f.optimal_tool_sequence||[]).join(' → ') || '—');
-
-  // Reset phases
-  ['phase-inject','phase-run','phase-results'].forEach((ph,i) => {
-    const el = document.getElementById(ph);
-    if (!el) return;
-    if (i===0) el.classList.remove('hidden');
-    else el.classList.add('hidden');
-  });
-  setEl('inject-status', '');
-  setEl('run-status', '');
-  setEl('restore-status', '');
-
-  // Reset inject button
-  const injBtn = document.getElementById('inject-btn');
-  if (injBtn) { injBtn.disabled=false; injBtn.textContent='⚡ INJECT FAULT INTO LAB'; }
-}
-
-async function injectFault() {
-  const f = liveState.currentFault;
-  if (!f) return;
-  const btn = document.getElementById('inject-btn');
-  const status = document.getElementById('inject-status');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Injecting...';
-  if (status) status.textContent = '';
-
-  try {
-    const r = await fetch(API+'/live/inject', {
-      method:'POST', headers:headers(), credentials:'include',
-      body: JSON.stringify({ fault_id: f.id })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Inject failed');
-
-    liveState.currentRunId = d.run_id;
-
-    // Show output
-    if (status) status.textContent = d.output?.split('\n').slice(-2).join(' ') || 'Injected';
-    btn.textContent = '✓ Injected';
-
-    // Advance to run phase
-    const phaseInject = document.getElementById('phase-inject');
-    const phaseRun    = document.getElementById('phase-run');
-    if (phaseInject) phaseInject.classList.add('hidden');
-    if (phaseRun)    phaseRun.classList.remove('hidden');
-
-    // Pre-load skill and update button label
-    updateDiagBtn();
-  } catch(e) {
-    if (status) status.textContent = 'Error: ' + (e.message || String(e));
-    btn.disabled = false;
-    btn.textContent = '⚡ INJECT FAULT INTO LAB';
-  }
-}
-
-function closeLivePanel() {
-  document.getElementById('fault-grid').style.display = '';
-  const panel = document.getElementById('live-run-panel');
-  if (panel) panel.style.display = 'none';
-  liveState.currentFault = null;
-  liveState.currentRunId = null;
-}
-
-let liveState = {
-  faults: [],
-  currentFault: null,
-  currentRunId: null,
-  skillContent: {},
-};
-
-// Load skill content from the skills-exp definitions (mapped by skill name)
-async function runLLM() {
-  const f = liveState.currentFault;
-  const btn = document.getElementById('run-llm-btn');
-  btn.disabled = true;
-  const selectedModel = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
-  const modelLabel = selectedModel.startsWith('claude') ? 'Claude' : selectedModel.split(':')[0].toUpperCase();
-  btn.innerHTML = `<span class="spinner"></span> ${modelLabel} diagnosing...`;
-  document.getElementById('run-status').textContent = `Loading skill and running ${modelLabel}...`;
-
-  // Load skill from backend — always fresh, picks up optimizer patches
-  let skillContent = null;
-  let skillSource = 'none';
-  try {
-    const sr = await fetch(`${API}/skill/${f.skill}?t=${Date.now()}`, {headers:headers(),credentials:'include'});
-    if (sr.ok) {
-      const sd = await sr.json();
-      skillContent = sd.content || null;
-      skillSource  = sd.source || 'unknown';
-    } else {
-      const err = await sr.json().catch(()=>({error:'skill not found'}));
-      document.getElementById('run-status').textContent = `Warning: skill not found (${f.skill}) — ${err.error}`;
-    }
-  } catch(e) {
-    document.getElementById('run-status').textContent = `Warning: skill load failed — ${e.message}`;
-  }
-
-  if (!skillContent) {
-    skillContent = `Troubleshoot this ${f.skill} fault systematically. Use composite health tools appropriate for the vendor.`;
-    skillSource = 'fallback';
-  }
-
-  renderSkillPanel(f.skill, skillSource, skillContent);
-  console.log(`[runLLM] skill=${f.skill} source=${skillSource} chars=${skillContent.length}`);
-
-  function fillScoreDash(s) {
-    document.getElementById('sc-total-val').textContent = s.total;
-    document.getElementById('sc-grade').textContent = s.grade;
-    document.getElementById('sc-grade').className = 'sc-grade ' + s.grade;
-    document.getElementById('sc-rc').textContent  = s.root_cause;
-    document.getElementById('sc-ts').textContent  = s.tool_sequence;
-    document.getElementById('sc-fp').textContent  = s.fix_proposed;
-    document.getElementById('sc-eff').textContent = s.efficiency;
-  }
-  function fillExpected() {
-    const ea = document.getElementById('expected-answer');
-    if (!ea || !f) return;
-    const rc  = f.root_cause  ? '<strong>Root cause:</strong> ' + escHtml(f.root_cause) : '';
-    const fix = f.fix_command ? '<br><strong>Fix:</strong><br><code style="font-family:monospace;font-size:12px;white-space:pre-wrap">' + escHtml(f.fix_command) + '</code>' : '';
-    const opt = (f.optimal_tool_sequence && f.optimal_tool_sequence.length)
-      ? '<br><strong>Optimal tools:</strong> ' + escHtml(f.optimal_tool_sequence.join(' → '))
-      : '';
-    ea.innerHTML = rc + fix + opt || '<em style="color:var(--text-dim)">No expected answer defined</em>';
-  }
-  function showResults(d) {
-    document.getElementById('phase-run').classList.add('hidden');
-    document.getElementById('phase-results').classList.remove('hidden');
-    document.getElementById('live-response-box').textContent = d.llm_response;
-    fillScoreDash(d.auto_score);
-    fillExpected();
-    renderToolTrace(d.tool_calls || [], f.optimal_tool_sequence || []);
-    document.getElementById('compare-results-section').style.display = 'none';
-  }
-  try {
-    if (evalMode === 'compare') {
-      document.getElementById('run-status').innerHTML = '<span class="spinner"></span> Run 1/2: WITH skill (' + f.skill + ')...';
-      const r1 = await fetch(API + '/live/run', {
-        method: 'POST', headers: headers(), credentials: 'include',
-        body: JSON.stringify({run_id: liveState.currentRunId, skill_content: skillContent, fault_meta: f, model: selectedModel})
-      });
-      const d1 = await r1.json();
-      if (!r1.ok) throw new Error(d1.error);
-      showResults(d1);
-      document.getElementById('run-status').innerHTML = '<span class="spinner"></span> Run 2/2: WITHOUT skill (generic)...';
-      const injR = await fetch(API + '/live/inject', {
-        method: 'POST', headers: headers(), credentials: 'include',
-        body: JSON.stringify({fault_id: f.id || liveState.currentFault.id})
-      });
-      const injD = await injR.json();
-      if (!injR.ok) throw new Error('Re-inject: ' + injD.error);
-      const genericSkill = 'You are a network engineer. Troubleshoot the fault systematically. Identify the root cause and propose a CLI fix.';
-      const r2 = await fetch(API + '/live/run', {
-        method: 'POST', headers: headers(), credentials: 'include',
-        body: JSON.stringify({run_id: injD.run_id, skill_content: genericSkill, fault_meta: f, model: selectedModel})
-      });
-      const d2 = await r2.json();
-      if (!r2.ok) throw new Error(d2.error);
-      renderCompareResults(d1, d2);
-      document.getElementById('run-status').textContent = 'Compare done — skill [' + skillSource + '] vs generic';
-      const ob1 = document.getElementById('btn-optimize-skill');
-      if (ob1) ob1.style.display = (d1.auto_score.grade !== 'PASS') ? 'block' : 'none';
-      loadLiveHistory(); btn.disabled = false; btn.textContent = '▶ RE-RUN';
-    } else {
-      const r = await fetch(API + '/live/run', {
-        method: 'POST', headers: headers(), credentials: 'include',
-        body: JSON.stringify({run_id: liveState.currentRunId, skill_content: skillContent, fault_meta: f, model: selectedModel})
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
-      showResults(d);
-      const tl = (d.tool_calls || []).map(function(t) { return t.command + (t.node ? '(' + t.node + ')' : ''); });
-      document.getElementById('run-status').textContent = 'Skill: ' + f.skill + ' [' + skillSource + ']' + (tl.length ? ' | ' + tl.join(' → ') : '');
-      const ob2 = document.getElementById('btn-optimize-skill');
-      if (ob2) ob2.style.display = (d.auto_score.grade !== 'PASS' || d.auto_score.total < 100) ? 'block' : 'none';
-      loadLiveHistory(); btn.disabled = false; btn.textContent = '▶ RE-RUN';
-    }
-  } catch(e) {
-    document.getElementById('run-status').textContent = 'Error: ' + e.message;
-    btn.disabled = false;
-    btn.textContent = '▶ RUN DIAGNOSIS';
-  }
-}
-
-async function restoreLab() {
-  document.getElementById('restore-status').textContent = 'Restoring lab...';
-  try {
-    const r = await fetch(`${API}/live/restore`, {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ run_id: liveState.currentRunId })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    document.getElementById('restore-status').textContent = '✓ Lab restored: ' + d.output.split('\n').slice(-1)[0];
-    // Re-enable inject for another run
-    document.getElementById('phase-results').classList.add('hidden');
-    document.getElementById('phase-inject').classList.remove('hidden');
-    document.getElementById('inject-btn').disabled = false;
-    document.getElementById('inject-btn').textContent = '⚡ INJECT FAULT AGAIN';
-  } catch(e) {
-    document.getElementById('restore-status').textContent = 'Restore error: ' + e.message;
-  }
-}
-
-async function loadLiveHistory() {
-  try {
-    const r = await fetch(`${API}/live/runs`, { headers: headers() });
-    const runs = await r.json();
-    const tbody = document.getElementById('live-history-body');
-    if (!runs.length) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">No runs yet</td></tr>'; return; }
-    tbody.innerHTML = runs.map(run => {
-      const s = run.auto_score || {};
-      return `<tr>
-        <td>${escHtml(run.fault_id)}</td>
-        <td>${s.total ?? '—'}/100</td>
-        <td style="color:${s.grade==='PASS'?'var(--green)':s.grade==='PARTIAL'?'var(--yellow)':'var(--red)'}">${s.grade || run.status}</td>
-        <td>${run.duration_ms ? (run.duration_ms/1000).toFixed(1)+'s' : '—'}</td>
-        <td>${run.created_at ? fmtDate(run.created_at) : '—'}</td>
-      </tr>`;
-    }).join('');
-  } catch {}
-}
-
-
-
-
-
-
-function updateDiagBtn() {
-  const model = document.getElementById('model-select')?.value || 'claude-sonnet-4-6';
-  const btn = document.getElementById('run-llm-btn');
-  if (!btn) return;
-  if (model.startsWith('claude')) {
-    const label = model.includes('opus') ? 'Claude Opus' : 'Claude Sonnet';
-    btn.textContent = '▶ RUN ' + label.toUpperCase() + ' DIAGNOSIS';
-  } else {
-    const label = model.split(':')[0].toUpperCase();
-    btn.textContent = '▶ RUN ' + label + ' DIAGNOSIS';
-  }
-}
-init();
-</script>
-<script src="/eval-framework.js"></script>
 </body>
 </html>

@@ -1,0 +1,34 @@
+{
+  "id": "evpn-11-peer-link-degradation",
+  "skill": "evpn-noc-triage",
+  "title": "MLAG Peer-Link Degraded \u2014 DC1_L3_LEAF1 Port-Channel3",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "Port-Channel3 (MLAG peer-link) on dc1-leaf1a lost one member link. Peer-link at 50% capacity. Intermittent drops under load.",
+  "root_cause": "Ethernet3 on dc1-leaf1a (one of two Port-Channel3 peer-link members) is shutdown. Peer-link degraded but MLAG domain still Active.",
+  "fix_command": "interface Ethernet3\nno shutdown",
+  "fix_device": "dc1-leaf1a",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show port-channel summary",
+    "show interfaces Port-Channel3",
+    "show interfaces Ethernet3",
+    "show mlag config-sanity"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "mlag",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "diagnose-mlag",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-endpoint"
+  ]
+}

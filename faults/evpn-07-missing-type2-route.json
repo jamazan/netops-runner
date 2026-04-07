@@ -1,0 +1,33 @@
+{
+  "id": "evpn-07-missing-type2-route",
+  "skill": "evpn-noc-triage",
+  "title": "Missing Type-2 Route \u2014 RT Mismatch VNI 10011 on dc1-leaf1a",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "MAC in VLAN 11 (VNI 10011) locally learned on dc1-leaf1a but not seen on remote VTEPs. EVPN sessions Established.",
+  "root_cause": "Route-target export for VLAN 11 changed to 10011:99999 on dc1-leaf1a. Remote leaves still import 10011:10011, so they reject dc1-leaf1a Type-2 routes.",
+  "fix_command": "router bgp 65101\nvlan 11\nno route-target both 10011:99999\nroute-target both 10011:10011",
+  "fix_device": "dc1-leaf1a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show bgp evpn instance",
+    "show run section router bgp"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

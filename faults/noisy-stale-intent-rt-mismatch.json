@@ -1,0 +1,36 @@
+{
+  "id": "noisy-stale-intent-rt-mismatch",
+  "skill": "evpn.check-control-plane",
+  "fault_domain": "noisy",
+  "title": "[Noisy] EVPN RT mismatch masked by stale show output \u2014 dc2-leaf1a",
+  "device": "dc2-leaf1a",
+  "mgmt_ip": "100.68.0.23",
+  "vendor": "juniper",
+  "symptom": "dc2-leaf1a TENANT-A hosts unreachable from dc2-leaf2a. BGP EVPN sessions show Established. show route table bgp.evpn.0 appears to show routes present. Initial checks suggest fabric is healthy \u2014 issue may be intermittent or endpoint-side.",
+  "root_cause": "policy-options community TENANT-A-RT changed to target:65201:99999 on dc2-leaf1a \u2014 TENANT-A routes not imported. show bgp summary and session state look healthy because sessions are up; agent must inspect route-target config and import policy to find mismatch. Surface-level health checks are misleading.",
+  "fix_command": "set policy-options community TENANT-A-RT members target:65201:10",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show route table bgp.evpn.0",
+    "show policy TENANT-A-IMPORT",
+    "show community TENANT-A-RT"
+  ],
+  "difficulty": "hard",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "evpn.check-control-plane"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "evpn.check-control-plane": "EP"
+  },
+  "eval_notes": "Agent must go beyond summary health checks and inspect RT/policy config even when sessions appear healthy. Tests whether agent avoids declaring 'fabric healthy' based on BGP session state alone without verifying route import."
+}

@@ -1,0 +1,34 @@
+{
+  "id": "evpn-16-tenant-reachability-failure",
+  "skill": "evpn-noc-triage",
+  "title": "Tenant VRF Reachability \u2014 VRF11 L3VNI Removed on dc1-leaf2a",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "VRF VRF11 inter-subnet routing failing. Type-5 routes present in RIB. Local host MAC/ARP resolved. Remote ARP incomplete.",
+  "root_cause": "vxlan vrf VRF11 vni 11 removed from Vxlan1 on dc1-leaf2a. L3VNI is gone so VXLAN encap/decap for VRF11 fails at the dataplane.",
+  "fix_command": "interface Vxlan1\nvxlan vrf VRF11 vni 11",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show vxlan vni",
+    "show arp vrf VRF11",
+    "show bgp evpn route-type ip-prefix",
+    "show interfaces Vxlan1",
+    "show vrf VRF11 detail"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "endpoint",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "diagnose-endpoint",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag"
+  ]
+}

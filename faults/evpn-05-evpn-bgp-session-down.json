@@ -1,0 +1,33 @@
+{
+  "id": "evpn-05-evpn-bgp-session-down",
+  "skill": "evpn-noc-triage",
+  "title": "EVPN BGP Session Down \u2014 dc1-leaf2a L2VPN EVPN AF",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "dc1-leaf2a L2VPN EVPN session to dc1-spine1 is down (Connect state). Underlay IPv4 sessions are all Established.",
+  "root_cause": "EVPN-OVERLAY-PEERS peer group deactivated under address-family evpn on dc1-leaf2a. Underlay unaffected.",
+  "fix_command": "router bgp 65102\naddress-family evpn\nneighbor EVPN-OVERLAY-PEERS activate",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp summary",
+    "show bgp neighbors 10.255.0.1",
+    "show run section router bgp"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "evpn-13-orphan-port-symptom",
+  "skill": "evpn-noc-triage",
+  "title": "Orphan Port \u2014 Po24 on dc1-leaf1a Only",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "Server srv-db-04 on Po24 unreachable. Po24 active on dc1-leaf1a but absent from DC1_L3_LEAF1 MLAG table on dc1-leaf1b. Peer-link up.",
+  "root_cause": "Port-Channel24 with mlag 24 created only on dc1-leaf1a. No corresponding MLAG interface on dc1-leaf1b. Traffic via dc1-leaf1b has no path to the host.",
+  "fix_command": "interface Port-Channel24\nno mlag 24\nno description\nexit\nno interface Port-Channel24",
+  "fix_device": "dc1-leaf1a",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show mlag interfaces",
+    "show mlag config-sanity",
+    "show port-channel summary",
+    "show mac address-table"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "mlag",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-mlag",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-endpoint"
+  ]
+}

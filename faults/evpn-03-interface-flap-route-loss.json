@@ -1,0 +1,33 @@
+{
+  "id": "evpn-03-interface-flap-route-loss",
+  "skill": "evpn-noc-triage",
+  "title": "Interface Flap and Route Loss \u2014 dc1-leaf2a Ethernet1",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "dc1-leaf2a Ethernet1 (uplink to dc1-spine1) is down. BGP prefix count dropped. CRC errors incrementing.",
+  "root_cause": "Ethernet1 on dc1-leaf2a is shutdown, causing BGP prefix loss to dc1-spine1. The interface shutdown simulates a physical link fault.",
+  "fix_command": "interface Ethernet1\nno shutdown",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show interfaces Ethernet1",
+    "show interfaces Ethernet1 counters",
+    "show bgp summary",
+    "show ip route"
+  ],
+  "difficulty": "easy",
+  "fault_domain": "underlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

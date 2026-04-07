@@ -12,5 +12,24 @@
     "show bgp evpn route-type mac-ip",
     "show bgp evpn instance"
   ],
-  "difficulty": "medium"
+  "difficulty": "medium",
+  "fault_domain": "evpn_overlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "evpn.check-control-plane": "EP",
+    "evpn.check-vni-and-vtep": "EP"
+  }
 }

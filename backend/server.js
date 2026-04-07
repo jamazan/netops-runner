@@ -30,7 +30,7 @@ const SKILLS_REPO_PATH = process.env.SKILLS_REPO_PATH || '';
 const SKILLS_DIR       = process.env.SKILLS_DIR       || '';
 const SKILLS_REPO_TOKEN  = process.env.SKILLS_REPO_TOKEN  || '';
 const SKILLS_REPO_BRANCH = process.env.SKILLS_REPO_BRANCH || 'main';
-const OLLAMA_BASE_URL    = process.env.OLLAMA_BASE_URL    || 'http://10.0.0.87:11434';
+const OLLAMA_BASE_URL    = process.env.OLLAMA_BASE_URL    || 'http://10.0.0.58:11434';
 const CLAB_LAB_NAME      = process.env.CLAB_LAB_NAME      || 'multi-site-fabric';
 
 const CORS_ORIGIN = process.env.CORS_ORIGIN
@@ -133,8 +133,7 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy(() => res.clearCookie('netops_session'));
-  res.json({ ok: true });
+  req.session.destroy(() => { res.clearCookie('netops_session'); res.json({ ok: true }); });
 });
 
 app.get('/api/auth/status', (req, res) => {
@@ -245,9 +244,11 @@ function scoreResponse(llmResponse, toolCalls, faultMeta) {
   const calls = toolCalls||[];
   const scores = {};
 
+  // Root cause: 35pts (keyword match)
   const rcKw = (faultMeta.root_cause||'').toLowerCase().split(/[\s,]+/).filter(w=>w.length>4);
-  scores.root_cause = Math.round((rcKw.filter(kw=>text.includes(kw)).length / Math.max(rcKw.length,1)) * 40);
+  scores.root_cause = Math.round((rcKw.filter(kw=>text.includes(kw)).length / Math.max(rcKw.length,1)) * 35);
 
+  // Tool sequence: 25pts (optimal tool match)
   const optimal   = faultMeta.optimal_tool_sequence||[];
   const usedTools = calls.map(c=>(c.command||c.tool||'').toLowerCase());
   let toolMatches = 0;
@@ -255,16 +256,79 @@ function scoreResponse(llmResponse, toolCalls, faultMeta) {
     const ol = opt.toLowerCase();
     if (usedTools.some(u => u===ol || u.includes(ol.replace('get_','').replace('_health','')))) toolMatches++;
   }
-  scores.tool_sequence = Math.round((toolMatches / Math.max(optimal.length,1)) * 30);
+  scores.tool_sequence = Math.round((toolMatches / Math.max(optimal.length,1)) * 25);
 
+  // Fix proposed: 20pts (fix keyword match)
   const fixKw = (faultMeta.fix_command||'').toLowerCase().split(/[\s,]+/).filter(w=>w.length>3);
   scores.fix_proposed = Math.round((fixKw.filter(kw=>text.includes(kw)).length / Math.max(fixKw.length,1)) * 20);
 
+  // Efficiency: 10pts
   const optCount = optimal.length+1, actualCount = calls.length;
   scores.efficiency = actualCount===0 ? 0 : actualCount<=optCount ? 10 : actualCount<=optCount*2 ? 7 : 4;
 
-  scores.total = scores.root_cause + scores.tool_sequence + scores.fix_proposed + scores.efficiency;
+  // Skill activation: 10pts (NEW — did the right skills get read_skill()-called?)
+  const expectedSkills = faultMeta.expected_skills || [];
+  const skillsRead = calls
+    .filter(c => c.command === 'read_skill')
+    .map(c => (c.node || '').toLowerCase());
+  if (expectedSkills.length === 0) {
+    scores.skill_activation = 10; // no expectation defined, full credit
+  } else {
+    const matches = expectedSkills.filter(e =>
+      skillsRead.some(s => s === e.toLowerCase() || s.includes(e.toLowerCase()) || e.toLowerCase().includes(s))
+    );
+    const ratio = matches.length / expectedSkills.length;
+    scores.skill_activation = ratio >= 1.0 ? 10 : ratio >= 0.5 ? 6 : ratio > 0 ? 3 : 0;
+  }
+
+  scores.total = scores.root_cause + scores.tool_sequence + scores.fix_proposed
+               + scores.efficiency + scores.skill_activation;
   scores.grade = scores.total>=80 ? 'PASS' : scores.total>=50 ? 'PARTIAL' : 'FAIL';
+
+  // Separate pass/fail dimensions (Step 3)
+  scores.quality_pass = scores.total >= 80;
+  scores.time_pass    = null; // populated by caller with duration
+  scores.token_pass   = true; // placeholder until token counting added
+  scores.overall      = scores.quality_pass; // AND of all three once all implemented
+
+  // ── EVPN NOC 3-part grading (trigger + chain + output) ──────────────────
+  // Extracts SKILLS_INVOKED line from the LLM response and compares against
+  // expected_skills and must_not_invoke from the fault JSON.
+  const rawText = llmResponse || '';
+  const skillsMatch = rawText.match(/SKILLS_INVOKED:\s*(.+)/i);
+  if (skillsMatch && faultMeta.expected_skills) {
+    // Parse actual skills from SKILLS_INVOKED line
+    const invokedRaw = skillsMatch[1].trim();
+    const actual = invokedRaw.split(/[,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    const expected = (faultMeta.expected_skills || []).map(s => s.toLowerCase());
+    const mustNot  = (faultMeta.must_not_invoke || []).map(s => s.toLowerCase());
+
+    // Trigger: recall + precision
+    const missing     = expected.filter(e => !actual.includes(e));
+    const falsePos    = mustNot.filter(m => actual.includes(m));
+    scores.trigger_pass      = missing.length === 0 && falsePos.length === 0;
+    scores.trigger_recall    = expected.length > 0 ? (expected.length - missing.length) / expected.length : 1;
+    scores.trigger_precision = mustNot.length === 0 ? 1 : (mustNot.length - falsePos.length) / mustNot.length;
+    scores.trigger_missing   = missing;
+    scores.trigger_fp        = falsePos;
+
+    // Chain: correct relative ordering of skills that fired
+    const actualOrdered   = actual.filter(s => expected.includes(s));
+    const expectedFiltered = expected.filter(s => actual.includes(s));
+    scores.chain_pass = JSON.stringify(actualOrdered) === JSON.stringify(expectedFiltered);
+    scores.chain_actual   = actualOrdered;
+    scores.chain_expected = expectedFiltered;
+
+    // Boost/penalise total score based on trigger+chain
+    if (scores.trigger_pass && scores.chain_pass) {
+      scores.total = Math.min(100, scores.total + 10);  // bonus: full skill compliance
+    } else if (!scores.trigger_pass) {
+      scores.total = Math.max(0, scores.total - 20);    // penalty: wrong skills fired
+    }
+    scores.total = Math.min(100, scores.total);
+    scores.grade = scores.total>=80 ? 'PASS' : scores.total>=50 ? 'PARTIAL' : 'FAIL';
+  }
+
   return scores;
 }
 
@@ -460,99 +524,92 @@ app.post('/api/live/inject', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/live/run', requireAuth, async (req, res) => {
-  const { run_id, skill_content, fault_meta, model } = req.body;
-  if (!run_id) return res.status(400).json({ error:'run_id required' });
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(503).json({ error:'No ANTHROPIC_API_KEY configured' });
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared diagnostic engine — used by /api/live/run AND /api/eval/suite/run
+// ═══════════════════════════════════════════════════════════════════════════
 
-  const run = db.prepare('SELECT * FROM live_runs WHERE id=? AND user_id=?').get(run_id, req.user.id);
-  if (!run) return res.status(404).json({ error:'Run not found' });
-  const recoverableStatuses = ['injected','run_failed','inject_failed','complete'];
-  if (!recoverableStatuses.includes(run.status))
-    return res.status(400).json({ error:`Run status is ${run.status}` });
-
-  db.prepare("UPDATE live_runs SET status=? WHERE id=?").run('running', run_id);
-  const startMs = Date.now();
-
-  // Determine vendor from device name to route to correct MCP
-  // Use vendor from fault metadata (set when fault was created)
-  // Falls back to device-name heuristic for backward compatibility
+/**
+ * Build the system prompt for a diagnostic run.
+ */
+function buildSystemPrompt(fault_meta, skillIndex) {
   const faultVendor = fault_meta?.vendor || (
     /^dc1-|^campus/.test(fault_meta?.device||'') ? 'arista' : 'juniper'
   );
-  const isArista = faultVendor === 'arista';
-  const mcpBase  = isArista ? CEOS_MCP_URL : CRPD_MCP_URL;
-  const vendor   = isArista ? 'Arista EOS' : 'Juniper JunOS/cRPD';
+  return `You are a senior network engineer working a live network ticket.
+Your job: choose the right skill, read it, then diagnose the fault with live tools.
 
-  const systemPrompt = `You are a senior network engineer working a live network ticket.
-A fault has been injected into the lab. Use your skill and the diagnostic tools to troubleshoot it.
+## Lab
+Lab: ${CLAB_LAB_NAME}  |  Device: ${fault_meta?.device||'unknown'}  |  Vendor: ${faultVendor}
+Call list_nodes() to see all devices.
 
-## Your Skill
-${skill_content || 'Use systematic troubleshooting methodology.'}
+## Workflow — FOLLOW THIS ORDER
+1. If **noc-triage** is in the skill catalog, call read_skill(noc-triage) FIRST.
+2. Otherwise pick the best matching orchestrator-* skill and read it first.
+3. Follow the skill's phased workflow exactly. Do NOT skip phases.
+4. Identify the exact misconfiguration from tool output.
+5. Propose fix CLI (READ-ONLY — do NOT apply config).
 
-## Lab Topology
-Lab: ${CLAB_LAB_NAME}
-Affected device: ${fault_meta?.device||'unknown'} (vendor: ${faultVendor})
-Use list_nodes() to discover all available nodes in this topology.
+Aim for 6-10 total tool calls as directed by the triage skill.
 
-## Diagnostic Tools — ${vendor} — MCP endpoint: ${mcpBase}
+## Skill Catalog
+${skillIndex}
 
-${isArista ? `**get_bgp_health(node)** — BGP sessions (all VRFs), neighbor detail for non-Established peers,
-  peer-group password config, prefix counts. Call FIRST for any BGP/EVPN session fault.
+## Tools
+list_skills() — Refresh the catalog.
+read_skill(name) — Load a full skill. ALWAYS call before diagnostics.
+list_nodes() — List all lab nodes.
+get_bgp_health(node) — BGP sessions, neighbor detail, policy.
+get_overlay_health(node) — EVPN/VXLAN overlay (Arista).
+get_underlay_health(node) — Interfaces, IP BGP, routes (Arista).
+get_bfd_health(node) — BFD session states.
+get_hardware_health(node) — CPU, memory, uptime.
+get_ospf_health(node) — OSPF adjacency, LSDB (Juniper).
+get_ldp_mpls_health(node) — LDP sessions, MPLS table (Juniper).
+get_evpn_health(node) — EVPN database, RT config (Juniper).
+get_l3vpn_health(node) — VPN instances, VPNv4 table (Juniper).
+ping(node, destination, [source], [vrf]) — Test reachability.
+run_command(node, command) — Any show command.`;
+}
 
-**get_overlay_health(node)** — EVPN BGP routes by type (2/3/5), VXLAN VNI table, VTEP peers,
-  MAC/IP table, VRF route-target config. Use for EVPN reachability or missing route faults.
+/**
+ * Core diagnostic loop: build prompt, run agentic LLM loop with real tools.
+ * Does NOT touch DB, inject, or restore faults.
+ * Returns { llmResponse, toolCalls, skillsFired, durationMs }.
+ */
+async function runDiagnostic(fault_meta, model, apiKey, customUserPrompt) {
+  const startMs = Date.now();
 
-**get_underlay_health(node)** — Interface status + errors, IP BGP underlay sessions, route table
-  summary, ECMP/maximum-paths config. Check before overlay for suspected underlay issues.
+  // Build skill index
+  let skillIndex = '';
+  try {
+    const { stdout: skillDirs } = await sshExec(`ls /home/${CLAB_USER}/network-skills/`);
+    const skillNames = skillDirs.trim().split('\n').filter(Boolean);
+    const lines = [];
+    for (const sn of skillNames) {
+      const { stdout: head } = await sshExec(
+        `head -20 /home/${CLAB_USER}/network-skills/${sn}/SKILL.md 2>/dev/null`
+      );
+      const dm = head.match(/^description:\s*>?\s*\n?(.*)/m);
+      lines.push(`- **${sn}**: ${dm ? dm[1].trim().slice(0,100) : 'Troubleshooting skill'}`);
+    }
+    skillIndex = lines.join('\n');
+  } catch(e) { skillIndex = '(use list_skills tool to refresh)'; }
 
-**get_bfd_health(node)** — BFD sessions, timers, multiplier, protocol bindings. Use when
-  BFD flapping is causing BGP or OSPF resets.
+  const systemPrompt = buildSystemPrompt(fault_meta, skillIndex);
 
-**get_hardware_health(node)** — CPU, memory, uptime. Use for resource exhaustion diagnosis.`
-  : `**get_bgp_health(node)** — BGP sessions, neighbor detail, export policy config (CRITICAL — JunOS
-  requires explicit export policy; missing = zero routes advertised even with Established sessions),
-  advertised route sample, route table summary. Call FIRST for any Juniper BGP fault.
-
-**get_ospf_health(node)** — Neighbor adjacency states, interface detail (timers, cost, passive flag,
-  MTU), LSDB summary, OSPF-installed routes. Use for backbone OSPF faults.
-
-**get_ldp_mpls_health(node)** — LDP session state, neighbor table, statistics (hello/auth drops),
-  inet.3 MPLS label table, Linux kernel MPLS forwarding table. Use for LDP or LSP faults.
-
-**get_evpn_health(node)** — EVPN database, BGP EVPN routes, VRF route-target config, routing
-  instances. Use for DC2 EVPN faults — RT mismatch or missing Type-5 routes.
-
-**get_l3vpn_health(node)** — VPN routing instances, VPNv4 BGP table, RD/RT config. Use for
-  pe1/pe2 L3VPN faults.`}
-
-**ping(node, destination, [source], [vrf/routing_instance])** — Confirm reachability.
-
-**run_command(node, command)** — Escape hatch. Use only when composite tools don't cover it.
-
-## How to troubleshoot
-1. Read your skill — it tells you which tool to call first and what patterns to look for
-2. Call the appropriate composite health tool for the affected device and domain
-3. Interpret the output — identify the specific misconfiguration causing the fault
-4. If needed, call one more targeted tool (ping or run_command) to confirm
-5. State your root cause and propose the exact CLI fix (READ-ONLY — do NOT apply config)
-6. Format findings using the Output template from your skill
-
-**Efficiency matters**: a good engineer uses 2-4 tool calls. Let the symptom and your skill
-guide which domain to investigate first. Calling every tool wastes time and shows poor methodology.`;
-
-  const userPrompt = `Network ticket:
+  const defaultUserPrompt = `Network ticket:
 Device: ${fault_meta?.device||'unknown'} (${fault_meta?.mgmt_ip||''})
 Symptom: "${fault_meta?.symptom||'degraded network operation'}"
 Skill assigned: ${fault_meta?.skill||'general'}
 
 Troubleshoot this fault. Call your diagnostic tools, identify the root cause, and propose a fix.`;
+  const userPrompt = (customUserPrompt && customUserPrompt.trim()) ? customUserPrompt.trim() : defaultUserPrompt;
 
   const toolCalls = [];
+  const skillsFired = [];
   let llmResponse = '';
 
-  // ── Tool executor: runs composite health tools via SSH→docker exec ──────────
+  // ── Tool executor ──────────────────────────────────────────────────────────
   async function execTool(toolName, input) {
     const node = input.node || input.device || '';
     const LAB  = CLAB_LAB_NAME;
@@ -562,8 +619,35 @@ Troubleshoot this fault. Call your diagnostic tools, identify the root cause, an
     const isAristaNode = nodeFaultVendor === 'arista' || nodeFaultVendor === 'ceos';
     const cli = isAristaNode ? 'Cli -p 15' : 'cli';
 
+    if (toolName === 'list_skills') {
+      try {
+        const { stdout } = await sshExec(`ls /home/${CLAB_USER}/network-skills/`);
+        const names = stdout.trim().split('\n').filter(Boolean);
+        const skills = [];
+        for (const name of names) {
+          const { stdout: head } = await sshExec(
+            `head -20 /home/${CLAB_USER}/network-skills/${name}/SKILL.md 2>/dev/null`
+          );
+          const dm = head.match(/^description:\s*>?\s*\n?(.*)/m);
+          skills.push({ name, description: dm ? dm[1].trim() : '' });
+        }
+        return JSON.stringify({ skills });
+      } catch(e) { return JSON.stringify({ error: e.message }); }
+    }
+
+    if (toolName === 'read_skill') {
+      const sname = input.name || '';
+      if (!/^[\w-]+$/.test(sname)) return JSON.stringify({ error: 'Invalid skill name' });
+      try {
+        const { stdout: p1, code: c1 } = await sshExec(`cat "${FAULT_DIR}/skills/${sname}.md" 2>/dev/null`);
+        if (c1===0 && p1.trim()) return JSON.stringify({ name:sname, content:p1, source:'patched' });
+        const { stdout: p2, code: c2 } = await sshExec(`cat "/home/${CLAB_USER}/network-skills/${sname}/SKILL.md" 2>/dev/null`);
+        if (c2===0 && p2.trim()) return JSON.stringify({ name:sname, content:p2, source:'network-skills' });
+        return JSON.stringify({ error: `Skill not found: ${sname}` });
+      } catch(e) { return JSON.stringify({ error: e.message }); }
+    }
+
     if (toolName === 'list_nodes') {
-      // Dynamically discover nodes from docker ps on the clab host
       try {
         const { stdout } = await sshExec(
           `docker ps --format '{{.Names}}\t{{.Image}}' --filter 'name=clab-${LAB}-'`
@@ -577,9 +661,7 @@ Troubleshoot this fault. Call your diagnostic tools, identify the root cause, an
           else nodes.other.push(nodeName);
         }
         return JSON.stringify({ lab: LAB, nodes });
-      } catch(e) {
-        return JSON.stringify({ lab: LAB, error: e.message });
-      }
+      } catch(e) { return JSON.stringify({ lab: LAB, error: e.message }); }
     }
 
     if (toolName === 'ping') {
@@ -590,19 +672,16 @@ Troubleshoot this fault. Call your diagnostic tools, identify the root cause, an
       const cmd = isAristaNode
         ? `ping ${dest} repeat ${cnt}${src}${vrf}`
         : `ping ${dest} count ${cnt} rapid${src}${vrf}`;
-      const fullCmd = isAristaNode ? cmd : cmd;
-      const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${fullCmd.replace(/\n/g,'\\n')}"`);
+      const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${cmd.replace(/\n/g,'\\n')}"`);
       return JSON.stringify({ node, destination: dest, output: stdout.trim() });
     }
 
     if (toolName === 'run_command') {
       const cmd = input.command || '';
-      const fullCmd = cmd;
-      const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${fullCmd.replace(/\n/g,'\\n')}"`);
+      const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${cmd.replace(/\n/g,'\\n')}"`);
       return JSON.stringify({ node, command: cmd, output: stdout.trim() });
     }
 
-    // Composite tool command sets
     const CMDS = {
       arista: {
         get_bgp_health:      ['show bgp summary vrf all','show bgp evpn summary','show run section router bgp | include peer-group|password|neighbor'],
@@ -620,128 +699,187 @@ Troubleshoot this fault. Call your diagnostic tools, identify the root cause, an
       }
     };
 
-    const vendor = isAristaNode ? 'arista' : 'juniper';
-    const cmds   = (CMDS[vendor] || {})[toolName] || [];
-    if (!cmds.length) return JSON.stringify({ error: `Unknown tool: ${toolName} for vendor ${vendor}` });
+    const vdr  = isAristaNode ? 'arista' : 'juniper';
+    const cmds = (CMDS[vdr] || {})[toolName] || [];
+    if (!cmds.length) return JSON.stringify({ error: `Unknown tool: ${toolName} for vendor ${vdr}` });
 
     const results = {};
     for (const cmd of cmds) {
-      const fullCmd = cmd;
       try {
-        const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${fullCmd.replace(/\n/g,'\\n')}"`);
+        const { stdout } = await sshExec(`docker exec ${ctr} ${cli} -c "${cmd.replace(/\n/g,'\\n')}"`);
         results[cmd] = stdout.trim();
-      } catch(e) {
-        results[cmd] = `ERROR: ${e.message}`;
-      }
+      } catch(e) { results[cmd] = `ERROR: ${e.message}`; }
     }
     return JSON.stringify({ node, tool: toolName, data: results }, null, 2);
   }
 
-  // ── Anthropic tool definitions ─────────────────────────────────────────────
+  // ── Full tool definitions ──────────────────────────────────────────────────
   const nodeParam = { type:'object', properties:{ node:{ type:'string', description:'Device name, e.g. dc1-leaf1b, pe1, rr1' }}, required:['node'] };
   const TOOL_DEFS = [
-    { name:'get_bgp_health',      description:'BGP health: all session states, non-Established neighbor detail, peer-group password config, prefix counts. Call FIRST for any BGP/EVPN fault.', input_schema: nodeParam },
-    { name:'get_overlay_health',  description:'EVPN/VXLAN overlay health: BGP EVPN routes by type (2/3/5), VNI table, VTEP peers, MAC/IP table, route-target config. Use for EVPN reachability faults.', input_schema: nodeParam },
-    { name:'get_underlay_health', description:'Underlay health: interface status + errors, IP BGP sessions, route summary, ECMP config. Check before overlay for suspected underlay issues.', input_schema: nodeParam },
-    { name:'get_bfd_health',      description:'BFD health: session states, timers, protocol bindings. Use when BFD flapping causes BGP/OSPF resets.', input_schema: nodeParam },
-    { name:'get_hardware_health', description:'System health: CPU, memory, uptime.', input_schema: nodeParam },
-    { name:'get_ospf_health',     description:'OSPF health: adjacency states, interface detail (timers, cost, passive flag, MTU), LSDB summary, routes. Use for backbone OSPF faults.', input_schema: nodeParam },
-    { name:'get_ldp_mpls_health', description:'LDP/MPLS health: session state, neighbor table, auth drop stats, inet.3 table, kernel MPLS. Use for LDP or MPLS LSP faults.', input_schema: nodeParam },
-    { name:'get_evpn_health',     description:'EVPN health: EVPN database, BGP EVPN routes, VRF route-target config. Use for DC2 EVPN faults.', input_schema: nodeParam },
-    { name:'get_l3vpn_health',    description:'L3VPN health: VPN instances, VPNv4 BGP table, RD/RT config. Use for pe1/pe2 L3VPN faults.', input_schema: nodeParam },
-    { name:'ping', description:'Ping from a node to test reachability.', input_schema:{ type:'object', properties:{ node:{type:'string'}, destination:{type:'string'}, count:{type:'number'}, source:{type:'string'}, vrf:{type:'string'}, routing_instance:{type:'string'} }, required:['node','destination'] }},
-    { name:'run_command', description:'Run any show command on a node (escape hatch — prefer composite tools first).', input_schema:{ type:'object', properties:{ node:{type:'string'}, command:{type:'string'} }, required:['node','command'] }},
-    { name:'list_nodes', description:'List all available lab nodes.', input_schema:{ type:'object', properties:{}, required:[] }},
+    { name:'list_skills',        description:'List all available troubleshooting skills. Call first to choose the right skill.', input_schema:{ type:'object', properties:{}, required:[] } },
+    { name:'read_skill',         description:'Load a full skill document by name. ALWAYS call before any diagnostics.', input_schema:{ type:'object', properties:{ name:{ type:'string' }}, required:['name'] } },
+    { name:'get_bgp_health',     description:'BGP health: sessions, neighbor detail, peer-group config, prefix counts.', input_schema: nodeParam },
+    { name:'get_overlay_health', description:'EVPN/VXLAN overlay health: BGP EVPN routes, VNI table, VTEP peers, route-target config.', input_schema: nodeParam },
+    { name:'get_underlay_health',description:'Underlay health: interface status, IP BGP sessions, route summary, ECMP config.', input_schema: nodeParam },
+    { name:'get_bfd_health',     description:'BFD health: session states, timers, protocol bindings.', input_schema: nodeParam },
+    { name:'get_hardware_health',description:'System health: CPU, memory, uptime.', input_schema: nodeParam },
+    { name:'get_ospf_health',    description:'OSPF health: adjacency states, interface detail, LSDB summary, routes.', input_schema: nodeParam },
+    { name:'get_ldp_mpls_health',description:'LDP/MPLS health: session state, neighbor table, inet.3 table, kernel MPLS.', input_schema: nodeParam },
+    { name:'get_evpn_health',    description:'EVPN health: EVPN database, BGP EVPN routes, VRF route-target config.', input_schema: nodeParam },
+    { name:'get_l3vpn_health',   description:'L3VPN health: VPN instances, VPNv4 BGP table, RD/RT config.', input_schema: nodeParam },
+    { name:'ping',               description:'Ping from a node to test reachability.', input_schema:{ type:'object', properties:{ node:{type:'string'}, destination:{type:'string'}, count:{type:'number'}, source:{type:'string'}, vrf:{type:'string'}, routing_instance:{type:'string'} }, required:['node','destination'] }},
+    { name:'run_command',        description:'Run any show command on a node.', input_schema:{ type:'object', properties:{ node:{type:'string'}, command:{type:'string'} }, required:['node','command'] }},
+    { name:'list_nodes',         description:'List all available lab nodes.', input_schema:{ type:'object', properties:{}, required:[] }},
   ];
 
-  // ── Agentic loop ──────────────────────────────────────────────────────────
+  // ── Agentic loop ───────────────────────────────────────────────────────────
   const isOllama = model && !model.startsWith('claude');
 
-  try {
-    if (isOllama) {
-      // Ollama: single-shot (no native tool use in most local models)
+  if (isOllama) {
+    const ollamaTools = TOOL_DEFS.map(t => ({
+      type: 'function',
+      function: { name: t.name, description: t.description, parameters: t.input_schema }
+    }));
+    const omsg = [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }];
+    let oiter = 0;
+    while (oiter < 12) {
+      oiter++;
       const r = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer ollama'},
-        body: JSON.stringify({ model, max_tokens:4096,
-          messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}] })
+        body: JSON.stringify({ model, max_tokens:4096, tools:ollamaTools, tool_choice:'auto', messages:omsg })
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error?.message||`Ollama HTTP ${r.status}`);
-      llmResponse = d.choices?.[0]?.message?.content||'';
-      // Extract text tool mentions for scoring
-      const TOOLS = ['get_bgp_health','get_overlay_health','get_underlay_health','get_bfd_health',
-        'get_hardware_health','get_ospf_health','get_ldp_mpls_health','get_evpn_health','get_l3vpn_health','ping','run_command'];
-      const seen = new Set();
-      for (const t of TOOLS)
-        for (const m of llmResponse.matchAll(new RegExp(t + '[\\s(]+(\\w[\\w-]+)', 'g'))) {
-          const key = `${t}:${m[1]}`.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); toolCalls.push({ command:t, node:m[1], type:'text_extracted' }); }
-        }
-    } else {
-      // Claude: real agentic tool-use loop
-      const messages = [{ role:'user', content: userPrompt }];
-      let iterations = 0;
-      const MAX_ITER = 8;
+      if (!r.ok) throw new Error(d.error?.message||'Ollama HTTP '+r.status);
+      const m = d.choices?.[0]?.message;
+      if (!m) break;
+      omsg.push(m);
+      if (!m.tool_calls || !m.tool_calls.length) { llmResponse = m.content||''; break; }
+      const tres = [];
+      for (const tc of m.tool_calls) {
+        const tname = tc.function?.name||'';
+        let tinput = {};
+        try { tinput = JSON.parse(tc.function?.arguments||'{}'); } catch {}
+        console.log('[ollama-tool] '+tname+'('+JSON.stringify(tinput)+')');
+        let result;
+        try {
+          result = await execTool(tname, tinput);
+          toolCalls.push({ command:tname, node:tinput.node||tinput.name||'', type:'ollama_tool', tool_call_id:tc.id });
+        } catch(e) { result = JSON.stringify({ error:e.message }); }
+        tres.push({ role:'tool', tool_call_id:tc.id, content:result });
+      }
+      omsg.push(...tres);
+    }
+    if (!llmResponse)
+      llmResponse = '[Max iter] ' + omsg.filter(m=>m.role==='assistant'&&m.content).map(m=>m.content).join('\n');
+  } else {
+    // Claude agentic loop
+    const messages = [{ role:'user', content: userPrompt }];
+    let iterations = 0;
+    while (iterations < 8) {
+      iterations++;
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+        body: JSON.stringify({ model: model || 'claude-haiku-4-5-20251001', max_tokens: 4096, system: systemPrompt, tools: TOOL_DEFS, messages })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
+      messages.push({ role:'assistant', content: d.content });
 
-      while (iterations < MAX_ITER) {
-        iterations++;
-        const r = await fetch('https://api.anthropic.com/v1/messages', {
-          method:'POST',
-          headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-          body: JSON.stringify({
-            model: model || 'claude-haiku-4-5-20251001',
-            max_tokens: 4096,
-            system: systemPrompt,
-            tools: TOOL_DEFS,
-            messages,
-          })
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-
-        messages.push({ role:'assistant', content: d.content });
-
-        if (d.stop_reason === 'end_turn') {
-          llmResponse = d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
-          break;
-        }
-
-        if (d.stop_reason === 'tool_use') {
-          const toolResults = [];
-          for (const block of d.content) {
-            if (block.type !== 'tool_use') continue;
-            console.log(`[tool] ${block.name}(${JSON.stringify(block.input)})`);
-            let result;
-            try {
-              result = await execTool(block.name, block.input);
-              toolCalls.push({ command:block.name, node:block.input.node||'', type:'mcp_composite', tool_use_id:block.id });
-            } catch(e) {
-              result = JSON.stringify({ error: e.message });
-            }
-            toolResults.push({ type:'tool_result', tool_use_id:block.id, content:result });
-          }
-          messages.push({ role:'user', content: toolResults });
-          continue;
-        }
-
-        // Any other stop reason — extract text and bail
+      if (d.stop_reason === 'end_turn') {
         llmResponse = d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
         break;
       }
-
-      if (!llmResponse) {
-        llmResponse = '[Max iterations reached] Partial diagnosis: ' +
-          messages.filter(m=>m.role==='assistant')
-            .flatMap(m => Array.isArray(m.content) ? m.content.filter(b=>b.type==='text').map(b=>b.text) : [m.content])
-            .join('\n');
+      if (d.stop_reason === 'tool_use') {
+        const toolResults = [];
+        for (const block of d.content) {
+          if (block.type !== 'tool_use') continue;
+          console.log(`[tool] ${block.name}(${JSON.stringify(block.input)})`);
+          let result;
+          try {
+            result = await execTool(block.name, block.input);
+            toolCalls.push({ command:block.name, node:block.input.node||block.input.name||'', type:'mcp_composite', tool_use_id:block.id });
+            if (block.name === 'read_skill' && block.input.name) {
+              if (!skillsFired.includes(block.input.name)) skillsFired.push(block.input.name);
+            }
+          } catch(e) { result = JSON.stringify({ error: e.message }); }
+          toolResults.push({ type:'tool_result', tool_use_id:block.id, content:result });
+        }
+        messages.push({ role:'user', content: toolResults });
+        continue;
       }
+      llmResponse = d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+      break;
     }
+    if (!llmResponse) {
+      llmResponse = '[Max iterations reached] Partial diagnosis: ' +
+        messages.filter(m=>m.role==='assistant')
+          .flatMap(m => Array.isArray(m.content) ? m.content.filter(b=>b.type==='text').map(b=>b.text) : [m.content])
+          .join('\n');
+    }
+  }
 
-    const durationMs = Date.now() - startMs;
+  const durationMs = Date.now() - startMs;
+  return { llmResponse, toolCalls, skillsFired, durationMs };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/live/run', requireAuth, async (req, res) => {
+  const { run_id, skill_content, fault_meta, model, custom_user_prompt } = req.body;
+  if (!run_id) return res.status(400).json({ error:'run_id required' });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error:'No ANTHROPIC_API_KEY configured' });
+
+  const run = db.prepare('SELECT * FROM live_runs WHERE id=? AND user_id=?').get(run_id, req.user.id);
+  if (!run) return res.status(404).json({ error:'Run not found' });
+  const recoverableStatuses = ['injected','run_failed','inject_failed','complete'];
+  if (!recoverableStatuses.includes(run.status))
+    return res.status(400).json({ error:`Run status is ${run.status}` });
+
+  db.prepare("UPDATE live_runs SET status=? WHERE id=?").run('running', run_id);
+  const startMs = Date.now();
+
+  // Determine vendor from device name to route to correct MCP
+  try {
+    const { llmResponse, toolCalls, skillsFired, durationMs } = await runDiagnostic(
+      fault_meta, model, apiKey, custom_user_prompt
+    );
     const autoScore  = scoreResponse(llmResponse, toolCalls, fault_meta||{});
-    db.prepare("UPDATE live_runs SET status=?,llm_response=?,tool_calls=?,auto_score=?,duration_ms=? WHERE id=?")
-      .run('complete', llmResponse, JSON.stringify(toolCalls), JSON.stringify(autoScore), durationMs, run_id);
+    autoScore.time_pass = durationMs <= 120000; // 120s soft SLA
+    autoScore.overall   = autoScore.quality_pass && autoScore.time_pass;
+    autoScore.duration_ms = durationMs;
+    db.prepare("UPDATE live_runs SET status=?,llm_response=?,tool_calls=?,auto_score=?,duration_ms=?,skills_fired=? WHERE id=?")
+      .run('complete', llmResponse, JSON.stringify(toolCalls), JSON.stringify(autoScore), durationMs, JSON.stringify(skillsFired), run_id);
+
+    // ── p90 regression baseline update ────────────────────────────────────────
+    try {
+      const faultIdForBaseline = run_id ? (db.prepare('SELECT fault_id FROM live_runs WHERE id=?').get(run_id) || {}).fault_id : null;
+      if (faultIdForBaseline) {
+        const existingBaseline = db.prepare('SELECT * FROM eval_baseline WHERE fault_id=?').get(faultIdForBaseline);
+        const allRuns = db.prepare(
+          "SELECT duration_ms FROM live_runs WHERE fault_id=? AND status='complete' ORDER BY created_at DESC LIMIT 20"
+        ).all(faultIdForBaseline).map(r => r.duration_ms).filter(d => d != null).sort((a,b)=>a-b);
+        if (allRuns.length >= 3) {
+          const p90idx = Math.floor(allRuns.length * 0.9);
+          const p90 = allRuns[Math.min(p90idx, allRuns.length-1)];
+          db.prepare(`INSERT INTO eval_baseline (fault_id,p90_duration_ms,sample_count,last_updated)
+            VALUES (?,?,?,?) ON CONFLICT(fault_id) DO UPDATE SET
+            p90_duration_ms=excluded.p90_duration_ms, sample_count=excluded.sample_count,
+            last_updated=excluded.last_updated`)
+            .run(faultIdForBaseline, p90, allRuns.length, Date.now());
+          if (existingBaseline && durationMs > existingBaseline.p90_duration_ms * 1.2) {
+            const pct = Math.round((durationMs/existingBaseline.p90_duration_ms - 1)*100);
+            autoScore.time_regression = `+${pct}% vs baseline`;
+            autoScore.time_pass = false;
+            // persist updated score with regression flag
+            db.prepare("UPDATE live_runs SET auto_score=? WHERE id=?")
+              .run(JSON.stringify(autoScore), run_id);
+          }
+        }
+      }
+    } catch(baselineErr) { console.error('baseline update error:', baselineErr.message); }
+
     audit(req.user.id,'POST','/api/live/run',200,`score=${autoScore.total} run=${run_id}`);
     res.json({ llm_response:llmResponse, tool_calls:toolCalls, auto_score:autoScore, duration_ms:durationMs });
   } catch(e) {
@@ -768,6 +906,28 @@ app.get('/api/live/runs', requireAuth, (req, res) => {
   const runs = db.prepare('SELECT * FROM live_runs WHERE user_id=? ORDER BY created_at DESC LIMIT 20').all(req.user.id);
   runs.forEach(r => { try { r.auto_score=JSON.parse(r.auto_score); } catch {} try { r.tool_calls=JSON.parse(r.tool_calls); } catch {} });
   res.json(runs);
+});
+
+app.get('/api/eval/baseline', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT * FROM eval_baseline ORDER BY last_updated DESC').all();
+  // Annotate with latest run info
+  const enriched = rows.map(r => {
+    const latest = db.prepare(
+      "SELECT auto_score, duration_ms, created_at FROM live_runs WHERE fault_id=? AND status='complete' ORDER BY created_at DESC LIMIT 1"
+    ).get(r.fault_id);
+    if (latest) {
+      try { latest.auto_score = JSON.parse(latest.auto_score); } catch {}
+      r.latest_score = latest.auto_score?.total;
+      r.latest_duration_ms = latest.duration_ms;
+      r.latest_run_at = latest.created_at;
+      // flag regression on latest run
+      if (latest.duration_ms && r.p90_duration_ms && latest.duration_ms > r.p90_duration_ms * 1.2) {
+        r.regression = `+${Math.round((latest.duration_ms/r.p90_duration_ms - 1)*100)}%`;
+      }
+    }
+    return r;
+  });
+  res.json(enriched);
 });
 
 app.get('/api/live/leaderboard', requireAuth, (req, res) => {
@@ -799,9 +959,11 @@ app.post('/api/skill/optimize', requireAuth, async (req, res) => {
     try { const {stdout}=await sshExec(`cat "/home/${CLAB_USER}/network-skills/${faultMeta.skill}/SKILL.md" 2>/dev/null`); skillContent=stdout.trim(); } catch {}
   }
 
+  const skillType = faultMeta.skill_type_map?.[faultMeta.skill] || 'EP';
   const scoreBreakdown = `Total: ${autoScore.total}/100 (${autoScore.grade})
-- Root Cause: ${autoScore.root_cause}/40  Tool Sequence: ${autoScore.tool_sequence}/30
-- Fix Proposed: ${autoScore.fix_proposed}/20  Efficiency: ${autoScore.efficiency}/10`;
+- Root Cause: ${autoScore.root_cause}/35  Tool Sequence: ${autoScore.tool_sequence}/25
+- Fix Proposed: ${autoScore.fix_proposed}/20  Efficiency: ${autoScore.efficiency}/10
+- Skill Activation: ${autoScore.skill_activation}/10`;
 
   const optimizePrompt = `You are a skill optimizer for an LLM network troubleshooting trainer.
 
@@ -827,6 +989,15 @@ ${skillContent||'(none found)'}
 \`\`\`
 ${(run.llm_response||'').slice(0,3000)}
 \`\`\`
+
+## Skill Type: ${skillType}
+${skillType === 'CU' ? `This is a CAPABILITY UPLIFT skill — it gives the agent access to data it cannot get otherwise.
+Failure analysis: Look for MISSING TOOL CALLS, insufficient data retrieval, or the agent using
+the wrong tool for the data source. The fix is usually adding explicit tool-call instructions.` :
+`This is an ENCODED PREFERENCE skill — it shapes HOW the agent reasons over data it already has.
+Failure analysis: Look for WRONG DECISION LOGIC, missed diagnostic conditions, incorrect check
+ordering, or the agent stopping too early. The fix is usually clarifying decision rules or
+adding missed check steps.`}
 
 Produce an improved SKILL.md. Call submit_skill_optimization with analysis, changes[], improved_skill.`;
 
@@ -855,6 +1026,462 @@ Produce an improved SKILL.md. Call submit_skill_optimization with analysis, chan
     audit(req.user.id,'POST','/api/skill/optimize',200,`Optimized: ${run.fault_id}`);
     res.json(result);
   } catch(e) { res.status(500).json({ error:e.message }); }
+});
+
+// ── DB migrations (idempotent) ───────────────────────────────────────────────
+try { db.prepare("ALTER TABLE live_runs ADD COLUMN skills_fired TEXT").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE live_runs ADD COLUMN token_count INTEGER").run(); } catch(e) {}
+try { db.prepare(`CREATE TABLE IF NOT EXISTS eval_baseline (
+  fault_id TEXT PRIMARY KEY, p90_duration_ms REAL, p90_tokens INTEGER,
+  sample_count INTEGER DEFAULT 0, last_updated INTEGER)`).run(); } catch(e) {}
+
+
+// ── Eval Suite — full automated run across all faults ────────────────────────
+const suiteState = { running: false, results: [], progress: 0, total: 0, startedAt: null };
+
+app.get('/api/eval/suite/status', requireAuth, (req, res) => {
+  res.json({ ...suiteState, results: suiteState.results });
+});
+
+app.post('/api/eval/suite/run', requireAuth, async (req, res) => {
+  if (suiteState.running) return res.status(409).json({ error: 'Suite already running' });
+
+  const suiteModel = process.env.SUITE_MODEL || 'claude-haiku-4-5-20251001';
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'No ANTHROPIC_API_KEY' });
+
+  // Load all fault JSONs
+  let faultFiles = [];
+  try {
+    const { stdout } = await sshExec(`ls ${FAULT_DIR}/*.json 2>/dev/null`);
+    faultFiles = stdout.trim().split('\n').filter(Boolean);
+  } catch(e) { return res.status(500).json({ error: 'Cannot list faults: ' + e.message }); }
+
+  const faults = [];
+  for (const file of faultFiles) {
+    try {
+      const { stdout } = await sshExec(`cat "${file}"`);
+      const f = JSON.parse(stdout);
+      if (f.id) faults.push(f);
+    } catch {}
+  }
+  if (!faults.length) return res.status(400).json({ error: 'No valid fault JSONs found' });
+
+  suiteState.running = true;
+  suiteState.results = [];
+  suiteState.progress = 0;
+  suiteState.total = faults.length;
+  suiteState.startedAt = Date.now();
+  res.json({ ok: true, total: faults.length, model: suiteModel });
+
+  // Run faults sequentially in background
+  (async () => {
+    for (const fault of faults) {
+      const result = { fault_id: fault.id, fault_domain: fault.fault_domain || 'unknown',
+                       title: fault.title, status: 'pending', auto_score: null,
+                       skills_fired: [], duration_ms: null, error: null };
+      try {
+        // Inject
+        const runId = nanoid();
+        db.prepare("INSERT INTO live_runs (id,user_id,fault_id,status,created_at) VALUES (?,?,?,?,?)")
+          .run(runId, req.user.id, fault.id, 'injecting', Date.now());
+        const inj = await sshExec(`bash "${FAULT_DIR}/${fault.id}-inject.sh" 2>&1`);
+        if (inj.code !== 0) { result.status = 'inject_failed'; result.error = inj.stdout; suiteState.results.push(result); suiteState.progress++; continue; }
+        db.prepare("UPDATE live_runs SET status=?,injected_at=? WHERE id=?").run('injected', Date.now(), runId);
+
+        // Run real diagnostic — full tool set, real SSH execution, shared system prompt
+        const { llmResponse, toolCalls, skillsFired, durationMs } = await runDiagnostic(
+          fault, suiteModel, apiKey
+        );
+        const autoScore = scoreResponse(llmResponse, toolCalls, fault);
+        autoScore.time_pass = durationMs <= 120000;
+        autoScore.overall = autoScore.quality_pass && autoScore.time_pass;
+        autoScore.duration_ms = durationMs;
+
+        db.prepare("UPDATE live_runs SET status=?,llm_response=?,tool_calls=?,auto_score=?,duration_ms=?,skills_fired=? WHERE id=?")
+          .run('complete', llmResponse, JSON.stringify(toolCalls), JSON.stringify(autoScore), durationMs, JSON.stringify(skillsFired), runId);
+
+        // Restore lab
+        try { await sshExec(`bash "${FAULT_DIR}/${fault.id}-restore.sh" 2>&1`); } catch {}
+        db.prepare("UPDATE live_runs SET status=?,restored_at=? WHERE id=?").run('restored', Date.now(), runId);
+
+        result.status = 'complete';
+        result.auto_score = autoScore;
+        result.skills_fired = skillsFired;
+        result.duration_ms = durationMs;
+        result.run_id = runId;
+      } catch(e) {
+        result.status = 'error';
+        result.error = e.message;
+      }
+      suiteState.results.push(result);
+      suiteState.progress++;
+      // Small gap between faults to avoid hammering the lab
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    suiteState.running = false;
+  })().catch(e => { suiteState.running = false; console.error('Suite run error:', e); });
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ── EVPN NOC EVAL — Standalone endpoints, no dependency on FAULT_DIR ────────
+// All 20 dc1 fault definitions embedded here. Inject/restore via direct
+// sshExec → docker exec on 10.0.0.71. Completely separate from /api/live/.
+// ════════════════════════════════════════════════════════════════════════════
+
+const DOCKER = `docker exec clab-${CLAB_LAB_NAME}`;
+
+const EVPN_NOC_FAULTS = {
+  'evpn-noc-01': {
+    id:'evpn-noc-01', title:'Underlay Neighbor Down — dc1-spine1 ↔ dc1-leaf1a',
+    device:'dc1-spine1', difficulty:'easy', fault_domain:'underlay',
+    symptom:'BGP neighbor 10.255.255.1 (dc1-leaf1a) stuck in Active on dc1-spine1.',
+    root_cause:'Ethernet1 on dc1-spine1 (uplink to dc1-leaf1a) is shut.',
+    fix_command:'interface Ethernet1\nno shutdown',
+    inject:  `${DOCKER}-dc1-spine1 Cli -p 15 -c "configure\ninterface Ethernet1\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-spine1 Cli -p 15 -c "configure\ninterface Ethernet1\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp summary','show bgp neighbors 10.255.255.1','show interfaces Ethernet1'],
+  },
+  'evpn-noc-02': {
+    id:'evpn-noc-02', title:'Remote VTEP Unreachable — leaf2 pair',
+    device:'dc1-leaf1a', difficulty:'medium', fault_domain:'underlay',
+    symptom:'VTEP 10.255.1.5 (dc1-leaf2a/2b) unreachable from dc1-leaf1a.',
+    root_cause:'Both uplinks on dc1-leaf2a (Ethernet1 to spine1, Ethernet2 to spine2) are shut.',
+    fix_command:'interface Ethernet1,Ethernet2\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nshutdown\ninterface Ethernet2\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nno shutdown\ninterface Ethernet2\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show vxlan vtep','show bgp evpn summary','show ip route 10.255.1.5'],
+  },
+  'evpn-noc-03': {
+    id:'evpn-noc-03', title:'Interface Flap and Route Loss — dc1-leaf2a Et1',
+    device:'dc1-leaf2a', difficulty:'easy', fault_domain:'underlay',
+    symptom:'Ethernet1 on dc1-leaf2a flapped; BGP prefix count to dc1-spine1 dropped.',
+    root_cause:'Ethernet1 on dc1-leaf2a is shut (final state after flap simulation).',
+    fix_command:'interface Ethernet1\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show interfaces Ethernet1','show interfaces Ethernet1 counters','show bgp summary'],
+  },
+  'evpn-noc-04': {
+    id:'evpn-noc-04', title:'CP CPU Spike — Multi-Adjacency Drop dc1-spine1',
+    device:'dc1-spine1', difficulty:'medium', fault_domain:'underlay',
+    symptom:'3 BGP adjacencies dropped simultaneously on dc1-spine1.',
+    root_cause:'All four leaf uplinks (Et1-Et4) on dc1-spine1 shut simultaneously.',
+    fix_command:'interface Ethernet1,Ethernet2,Ethernet3,Ethernet4\nno shutdown',
+    inject:  `${DOCKER}-dc1-spine1 Cli -p 15 -c "configure\ninterface Ethernet1\nshutdown\ninterface Ethernet2\nshutdown\ninterface Ethernet3\nshutdown\ninterface Ethernet4\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-spine1 Cli -p 15 -c "configure\ninterface Ethernet1\nno shutdown\ninterface Ethernet2\nno shutdown\ninterface Ethernet3\nno shutdown\ninterface Ethernet4\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp summary','show processes top','show interfaces status'],
+  },
+  'evpn-noc-05': {
+    id:'evpn-noc-05', title:'EVPN BGP Session Down — dc1-leaf2a L2VPN EVPN AF',
+    device:'dc1-leaf2a', difficulty:'easy', fault_domain:'overlay-evpn',
+    symptom:'L2VPN EVPN session from dc1-leaf2a to dc1-spine1 (10.255.0.1) is Connect. Underlay IPv4 sessions all Established.',
+    root_cause:'EVPN-OVERLAY-PEERS deactivated under address-family evpn on dc1-leaf2a.',
+    fix_command:'router bgp 65102\naddress-family evpn\nneighbor EVPN-OVERLAY-PEERS activate',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\nrouter bgp 65102\naddress-family evpn\nno neighbor EVPN-OVERLAY-PEERS activate\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\nrouter bgp 65102\naddress-family evpn\nneighbor EVPN-OVERLAY-PEERS activate\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn summary','show bgp neighbors 10.255.0.1','show run section router bgp | include activate'],
+  },
+  'evpn-noc-06': {
+    id:'evpn-noc-06', title:'EVPN Route Withdrawal Flap — VNI 10011 dc1-leaf1a',
+    device:'dc1-leaf1a', difficulty:'medium', fault_domain:'overlay-evpn',
+    symptom:'Type-2 routes for VNI 10011 from dc1-leaf1a repeatedly withdrawn. EVPN session Established.',
+    root_cause:'vxlan vlan 11 vni 10011 binding removed from Vxlan1 on dc1-leaf1a.',
+    fix_command:'interface Vxlan1\nvxlan vlan 11 vni 10011',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Vxlan1\nno vxlan vlan 11 vni 10011\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Vxlan1\nvxlan vlan 11 vni 10011\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn summary','show vxlan vni','show bgp evpn route-type mac-ip vni 10011'],
+  },
+  'evpn-noc-07': {
+    id:'evpn-noc-07', title:'Missing Type-2 Route — VNI 10011 RT Mismatch dc1-leaf1a',
+    device:'dc1-leaf1a', difficulty:'medium', fault_domain:'overlay-evpn',
+    symptom:'Host MAC in VLAN 11 locally learned on dc1-leaf1a but not seen on remote VTEPs. EVPN sessions Established.',
+    root_cause:'Route-target for VLAN 11/VNI 10011 changed to 10011:99999 on dc1-leaf1a. Remote leaves reject routes (expect 10011:10011).',
+    fix_command:'router bgp 65101\nvlan 11\nno route-target both 10011:99999\nroute-target both 10011:10011',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 11\nno route-target both 10011:10011\nroute-target both 10011:99999\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 11\nno route-target both 10011:99999\nroute-target both 10011:10011\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','evpn.check-vni-and-vtep','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn route-type mac-ip vni 10011','show run section router bgp | include vlan 11'],
+  },
+  'evpn-noc-08': {
+    id:'evpn-noc-08', title:'Missing Type-5 Route — VRF11 redistribute removed dc1-leaf1a',
+    device:'dc1-leaf1a', difficulty:'medium', fault_domain:'overlay-evpn',
+    symptom:'VRF VRF11 inter-subnet routing failing on dc1-leaf1a. No Type-5 routes originated. L2 within VRF11 works.',
+    root_cause:'redistribute connected removed from VRF VRF11 BGP config on dc1-leaf1a.',
+    fix_command:'router bgp 65101\nvrf VRF11\nredistribute connected route-map RM-CONN-2-BGP-VRFS',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvrf VRF11\nno redistribute connected route-map RM-CONN-2-BGP-VRFS\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvrf VRF11\nredistribute connected route-map RM-CONN-2-BGP-VRFS\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn route-type ip-prefix','show run section router bgp | section VRF11'],
+  },
+  'evpn-noc-09': {
+    id:'evpn-noc-09', title:'Route-Target Mismatch — VLAN 12/VNI 10012 dc1-leaf2a',
+    device:'dc1-leaf2a', difficulty:'medium', fault_domain:'overlay-evpn',
+    symptom:'VLAN 12 hosts on dc1-leaf1a cannot reach dc1-leaf2a. 0 MAC entries for VNI 10012 on dc1-leaf2a.',
+    root_cause:'Route-target for VLAN 12/VNI 10012 changed to 10012:88888 on dc1-leaf2a.',
+    fix_command:'router bgp 65102\nvlan 12\nno route-target both 10012:88888\nroute-target both 10012:10012',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\nrouter bgp 65102\nvlan 12\nno route-target both 10012:10012\nroute-target both 10012:88888\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\nrouter bgp 65102\nvlan 12\nno route-target both 10012:88888\nroute-target both 10012:10012\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn route-type mac-ip vni 10012','show run section router bgp | section vlan 12'],
+  },
+  'evpn-noc-10': {
+    id:'evpn-noc-10', title:'VNI Not Active — VNI 10022 removed from dc1-leaf1b',
+    device:'dc1-leaf1b', difficulty:'easy', fault_domain:'overlay-evpn',
+    symptom:'VLAN 22 hosts unreachable from remote leaves via dc1-leaf1b. EVPN sessions Established. VNI 10022 shows inactive.',
+    root_cause:'vxlan vlan 22 vni 10022 binding removed from Vxlan1 on dc1-leaf1b.',
+    fix_command:'interface Vxlan1\nvxlan vlan 22 vni 10022',
+    inject:  `${DOCKER}-dc1-leaf1b Cli -p 15 -c "configure\ninterface Vxlan1\nno vxlan vlan 22 vni 10022\nend"`,
+    restore: `${DOCKER}-dc1-leaf1b Cli -p 15 -c "configure\ninterface Vxlan1\nvxlan vlan 22 vni 10022\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-vni-and-vtep','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-control-plane','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show vxlan vni','show vxlan vtep','show run section vxlan'],
+  },
+  'evpn-noc-11': {
+    id:'evpn-noc-11', title:'MLAG Peer-Link Degradation — DC1_L3_LEAF1 Po3',
+    device:'dc1-leaf1a', difficulty:'medium', fault_domain:'mlag',
+    symptom:'Port-Channel3 peer-link in DC1_L3_LEAF1 lost a member. Bandwidth degraded, utilization high.',
+    root_cause:'Ethernet3 on dc1-leaf1a (one of two Port-Channel3 members) is shut.',
+    fix_command:'interface Ethernet3\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Ethernet3\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Ethernet3\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','diagnose-mlag','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-endpoint'],
+    optimal_tool_sequence:['show mlag','show port-channel summary','show interfaces Ethernet3,Ethernet4'],
+  },
+  'evpn-noc-12': {
+    id:'evpn-noc-12', title:'MLAG Consistency Mismatch — DC1_L3_LEAF2 Po5',
+    device:'dc1-leaf2a', difficulty:'medium', fault_domain:'mlag',
+    symptom:'DC1_L3_LEAF2 MLAG config-sanity reports inconsistency. Peer-link up. Asymmetric forwarding causing drops.',
+    root_cause:'VLAN 21 removed from Port-Channel5 trunk allowed list on dc1-leaf2b only.',
+    fix_command:'interface Port-Channel5\nswitchport trunk allowed vlan add 21',
+    inject:  `${DOCKER}-dc1-leaf2b Cli -p 15 -c "configure\ninterface Port-Channel5\nswitchport trunk allowed vlan remove 21\nend"`,
+    restore: `${DOCKER}-dc1-leaf2b Cli -p 15 -c "configure\ninterface Port-Channel5\nswitchport trunk allowed vlan add 21\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-mlag','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-endpoint'],
+    optimal_tool_sequence:['show mlag','show mlag config-sanity','show interfaces Port-Channel5 trunk'],
+  },
+  'evpn-noc-13': {
+    id:'evpn-noc-13', title:'Orphan Port Symptom — Po24 on dc1-leaf1a only',
+    device:'dc1-leaf1a', difficulty:'hard', fault_domain:'mlag',
+    symptom:'Server on Po24 unreachable. Po24 active on dc1-leaf1a but absent from DC1_L3_LEAF1 peer dc1-leaf1b. MLAG peer-link up.',
+    root_cause:'Port-Channel24 with mlag 24 created on dc1-leaf1a only — orphan port.',
+    fix_command:'no interface Port-Channel24',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Port-Channel24\ndescription ORPHAN-TEST\nswitchport access vlan 11\nmlag 24\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Port-Channel24\nno mlag 24\nno description\nend\nconfigure\nno interface Port-Channel24\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-mlag','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-endpoint'],
+    optimal_tool_sequence:['show mlag','show mlag interfaces','show mlag config-sanity'],
+  },
+  'evpn-noc-14': {
+    id:'evpn-noc-14', title:'Remote MAC Not Learned — VNI 10011 RT Import Break dc1-leaf1a',
+    device:'dc1-leaf1a', difficulty:'hard', fault_domain:'endpoint',
+    symptom:'Local MAC in VLAN 11 present but remote MACs from dc1-leaf2a not appearing in MAC table for VNI 10011.',
+    root_cause:'RT import for VNI 10011 on dc1-leaf1a changed to 10011:77777 — blocks dc1-leaf2a Type-2 routes.',
+    fix_command:'router bgp 65101\nvlan 11\nno route-target export 10011:10011\nno route-target import 10011:77777\nroute-target both 10011:10011',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 11\nno route-target both 10011:10011\nroute-target export 10011:10011\nroute-target import 10011:77777\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 11\nno route-target export 10011:10011\nno route-target import 10011:77777\nroute-target both 10011:10011\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-endpoint','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','diagnose-mlag'],
+    optimal_tool_sequence:['show bgp evpn route-type mac-ip vni 10011','show run section router bgp | section vlan 11','show vxlan address-table vlan 11'],
+  },
+  'evpn-noc-15': {
+    id:'evpn-noc-15', title:'ARP Resolution Failure — Host Silent dc1-leaf2b',
+    device:'dc1-leaf2b', difficulty:'easy', fault_domain:'endpoint',
+    symptom:'Host on dc1-leaf2b showing ARP incomplete. Port Ethernet8 connected (line protocol up). No fabric faults. No MAC entry.',
+    root_cause:'Ethernet8 on dc1-leaf2b is shut — simulates silent endpoint (NIC up, OS not responding).',
+    fix_command:'interface Ethernet8\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf2b Cli -p 15 -c "configure\ninterface Ethernet8\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-leaf2b Cli -p 15 -c "configure\ninterface Ethernet8\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-endpoint','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag'],
+    optimal_tool_sequence:['show mac address-table vlan 21','show arp vrf VRF11','show interfaces Ethernet8','show interfaces Ethernet8 counters'],
+  },
+  'evpn-noc-16': {
+    id:'evpn-noc-16', title:'Tenant Reachability Failure — VRF11 L3VNI Removed dc1-leaf2a',
+    device:'dc1-leaf2a', difficulty:'medium', fault_domain:'endpoint',
+    symptom:'VRF VRF11 inter-subnet routing broken on dc1-leaf2a. Type-5 routes present. Local host MAC/ARP resolved. Remote host ARP incomplete.',
+    root_cause:'vxlan vrf VRF11 vni 11 removed from Vxlan1 on dc1-leaf2a. VRF11 L3 encap/decap broken.',
+    fix_command:'interface Vxlan1\nvxlan vrf VRF11 vni 11',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Vxlan1\nno vxlan vrf VRF11 vni 11\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Vxlan1\nvxlan vrf VRF11 vni 11\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','diagnose-endpoint','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag'],
+    optimal_tool_sequence:['show vxlan vni','show ip route vrf VRF11','show bgp evpn route-type ip-prefix'],
+  },
+  'evpn-noc-17': {
+    id:'evpn-noc-17', title:'Noisy Logs — Single Root Cause — dc1-spine2 Et3',
+    device:'dc1-spine2', difficulty:'medium', fault_domain:'underlay',
+    symptom:'dc1-spine2 generating syslog storm. 1 BGP session (dc1-leaf2a, 10.255.255.10) actually down.',
+    root_cause:'Ethernet3 on dc1-spine2 (uplink to dc1-leaf2a) is shut — produces BGP notification storm.',
+    fix_command:'interface Ethernet3\nno shutdown',
+    inject:  `${DOCKER}-dc1-spine2 Cli -p 15 -c "configure\ninterface Ethernet3\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-spine2 Cli -p 15 -c "configure\ninterface Ethernet3\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show interfaces Ethernet3','show bgp neighbors 10.255.255.10','show logging last 100'],
+  },
+  'evpn-noc-18': {
+    id:'evpn-noc-18', title:'Stale NetBox Intent — dc1-leaf1b RT Mismatch',
+    device:'dc1-leaf1b', difficulty:'medium', fault_domain:'overlay-evpn',
+    symptom:'Host MAC not seen on remote VTEPs from dc1-leaf1b. EVPN sessions Established. NetBox may be stale after recent cabling change.',
+    root_cause:'RT for VNI 10012 changed on dc1-leaf1b to 10012:55555 — simulates post-provisioning error not yet in NetBox.',
+    fix_command:'router bgp 65101\nvlan 12\nno route-target both 10012:55555\nroute-target both 10012:10012',
+    inject:  `${DOCKER}-dc1-leaf1b Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 12\nno route-target both 10012:10012\nroute-target both 10012:55555\nend"`,
+    restore: `${DOCKER}-dc1-leaf1b Cli -p 15 -c "configure\nrouter bgp 65101\nvlan 12\nno route-target both 10012:55555\nroute-target both 10012:10012\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp evpn summary','show vxlan vni','show run section router bgp | section vlan 12'],
+  },
+  'evpn-noc-19': {
+    id:'evpn-noc-19', title:'Multi-Symptom Cascade — dc1-leaf2a Et1',
+    device:'dc1-leaf2a', difficulty:'hard', fault_domain:'underlay',
+    symptom:'5 simultaneous alerts: spine1 BGP down, leaf2a EVPN routes withdrawn, VTEP tunnel down, leaf1a/1b VLAN11 hosts unreachable. NOC-CR-982 open for dc1-leaf2a Et1 maintenance.',
+    root_cause:'Ethernet1 on dc1-leaf2a (uplink to dc1-spine1) shut — maintenance action matching NOC-CR-982.',
+    fix_command:'interface Ethernet1\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nshutdown\nend"`,
+    restore: `${DOCKER}-dc1-leaf2a Cli -p 15 -c "configure\ninterface Ethernet1\nno shutdown\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-underlay','evpn.check-control-plane','correlate-with-change','produce-rca'],
+    must_not_invoke:['evpn.check-vni-and-vtep','diagnose-mlag','diagnose-endpoint'],
+    optimal_tool_sequence:['show bgp summary','show bgp evpn summary','show vxlan vtep','show interfaces Ethernet1'],
+  },
+  'evpn-noc-20': {
+    id:'evpn-noc-20', title:'False Positive — Endpoint Fault, Fabric Healthy (Known Failure)',
+    device:'dc1-leaf1a', difficulty:'hard', fault_domain:'endpoint',
+    symptom:'Host 10.11.10.77 unreachable from all leaves. Ethernet9 connected (NIC up, OS down for upgrade). Zero ingress counters. Fabric completely healthy.',
+    root_cause:'Ethernet9 on dc1-leaf1a (host access port) is shut — host is down for OS upgrade. Fabric has no fault.',
+    fix_command:'interface Ethernet9\nno shutdown',
+    inject:  `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Ethernet9\nshutdown\ndescription HOST-DOWN-OS-UPGRADE\nend"`,
+    restore: `${DOCKER}-dc1-leaf1a Cli -p 15 -c "configure\ninterface Ethernet9\nno shutdown\nno description\nend"`,
+    expected_skills:['get-intent','get-fabric-state','logs.build-evidence','diagnose-endpoint','correlate-with-change','produce-rca'],
+    must_not_invoke:['diagnose-underlay','evpn.check-control-plane','evpn.check-vni-and-vtep','diagnose-mlag'],
+    optimal_tool_sequence:['show mac address-table vlan 11','show interfaces Ethernet9','show interfaces Ethernet9 counters','show arp vrf VRF10'],
+  },
+};
+
+// Ensure evpn_runs table exists
+db.exec(`CREATE TABLE IF NOT EXISTS evpn_runs (
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL, fault_id TEXT NOT NULL,
+  injected_at INTEGER, restored_at INTEGER, status TEXT NOT NULL DEFAULT 'idle',
+  llm_response TEXT, tool_calls TEXT, auto_score TEXT, duration_ms INTEGER,
+  skills_fired TEXT, created_at INTEGER NOT NULL
+)`);
+
+// GET /api/evpn/cases — return all 20 case metadata (no inject/restore commands)
+app.get('/api/evpn/cases', requireAuth, (req, res) => {
+  const cases = Object.values(EVPN_NOC_FAULTS).map(f => {
+    const { inject, restore, ...safe } = f;
+    return safe;
+  });
+  res.json(cases);
+});
+
+// POST /api/evpn/inject — inject fault directly via sshExec docker exec
+app.post('/api/evpn/inject', requireAuth, async (req, res) => {
+  const { fault_id } = req.body;
+  if (!fault_id || !EVPN_NOC_FAULTS[fault_id]) return res.status(400).json({ error: 'Unknown fault_id' });
+  const fault = EVPN_NOC_FAULTS[fault_id];
+  const runId = nanoid();
+  db.prepare("INSERT INTO evpn_runs (id,user_id,fault_id,status,created_at) VALUES (?,?,?,?,?)")
+    .run(runId, req.user.id, fault_id, 'injecting', Date.now());
+  try {
+    const { stdout, code } = await sshExec(fault.inject);
+    if (code !== 0) {
+      db.prepare("UPDATE evpn_runs SET status=? WHERE id=?").run('inject_failed', runId);
+      return res.status(500).json({ error: 'Inject failed', detail: stdout });
+    }
+    db.prepare("UPDATE evpn_runs SET status=?,injected_at=? WHERE id=?").run('injected', Date.now(), runId);
+    audit(req.user.id, 'POST', '/api/evpn/inject', 200, `Injected: ${fault_id}`);
+    res.json({ run_id: runId, output: stdout, fault_id });
+  } catch(e) {
+    db.prepare("UPDATE evpn_runs SET status=? WHERE id=?").run('inject_failed', runId);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/evpn/run — run diagnostic against injected fault
+app.post('/api/evpn/run', requireAuth, async (req, res) => {
+  const { run_id, model } = req.body;
+  if (!run_id) return res.status(400).json({ error: 'run_id required' });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'No ANTHROPIC_API_KEY' });
+  const run = db.prepare('SELECT * FROM evpn_runs WHERE id=? AND user_id=?').get(run_id, req.user.id);
+  if (!run) return res.status(404).json({ error: 'Run not found' });
+  const fault = EVPN_NOC_FAULTS[run.fault_id];
+  if (!fault) return res.status(400).json({ error: 'Fault definition missing' });
+  const recoverableStatuses = ['injected','run_failed','inject_failed','complete'];
+  if (!recoverableStatuses.includes(run.status))
+    return res.status(400).json({ error: `Run status is ${run.status}` });
+  db.prepare("UPDATE evpn_runs SET status=? WHERE id=?").run('running', run_id);
+  try {
+    const { llmResponse, toolCalls, skillsFired, durationMs } = await runDiagnostic(
+      { ...fault, skill: 'evpn-noc-triage', vendor: 'arista' },
+      model || 'claude-sonnet-4-6', apiKey
+    );
+    const autoScore = scoreResponse(llmResponse, toolCalls, fault);
+    autoScore.time_pass = durationMs <= 120000;
+    autoScore.overall = autoScore.quality_pass && autoScore.time_pass;
+    autoScore.duration_ms = durationMs;
+    db.prepare("UPDATE evpn_runs SET status=?,llm_response=?,tool_calls=?,auto_score=?,duration_ms=?,skills_fired=? WHERE id=?")
+      .run('complete', llmResponse, JSON.stringify(toolCalls), JSON.stringify(autoScore), durationMs, JSON.stringify(skillsFired), run_id);
+    audit(req.user.id, 'POST', '/api/evpn/run', 200, `score=${autoScore.total} run=${run_id}`);
+    res.json({ llm_response: llmResponse, tool_calls: toolCalls, auto_score: autoScore, duration_ms: durationMs });
+  } catch(e) {
+    db.prepare("UPDATE evpn_runs SET status=? WHERE id=?").run('run_failed', run_id);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/evpn/restore — restore dc1 fabric
+app.post('/api/evpn/restore', requireAuth, async (req, res) => {
+  const { run_id } = req.body;
+  const run = db.prepare('SELECT * FROM evpn_runs WHERE id=? AND user_id=?').get(run_id, req.user.id);
+  if (!run) return res.status(404).json({ error: 'Run not found' });
+  const fault = EVPN_NOC_FAULTS[run.fault_id];
+  if (!fault) return res.status(400).json({ error: 'Fault definition missing' });
+  try {
+    const { stdout, code } = await sshExec(fault.restore);
+    if (code !== 0) return res.status(500).json({ error: 'Restore failed', detail: stdout });
+    db.prepare("UPDATE evpn_runs SET status=?,restored_at=? WHERE id=?").run('restored', Date.now(), run_id);
+    audit(req.user.id, 'POST', '/api/evpn/restore', 200, `Restored: ${run.fault_id}`);
+    res.json({ ok: true, output: stdout });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/evpn/runs — recent runs for current user
+app.get('/api/evpn/runs', requireAuth, (req, res) => {
+  const runs = db.prepare('SELECT * FROM evpn_runs WHERE user_id=? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
+  runs.forEach(r => {
+    try { r.auto_score = JSON.parse(r.auto_score); } catch {}
+    try { r.tool_calls = JSON.parse(r.tool_calls); } catch {}
+    try { r.skills_fired = JSON.parse(r.skills_fired); } catch {}
+  });
+  res.json(runs);
+});
+
+// GET /api/evpn/runs/all — all users' runs (admin only, for leaderboard)
+app.get('/api/evpn/runs/all', requireAdmin, (req, res) => {
+  const runs = db.prepare(`SELECT e.*, u.username FROM evpn_runs e
+    JOIN users u ON u.id=e.user_id WHERE e.status='complete'
+    ORDER BY e.created_at DESC LIMIT 100`).all();
+  runs.forEach(r => { try { r.auto_score=JSON.parse(r.auto_score); } catch {} });
+  res.json(runs);
 });
 
 app.listen(PORT, () => console.log(`netops-runner backend on :${PORT}`));

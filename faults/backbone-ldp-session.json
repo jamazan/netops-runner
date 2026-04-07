@@ -13,5 +13,22 @@
     "show ldp neighbor",
     "show route 10.255.1.2"
   ],
-  "difficulty": "medium"
+  "difficulty": "medium",
+  "fault_domain": "underlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-underlay"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-underlay": "EP"
+  }
 }

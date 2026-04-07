@@ -1,0 +1,34 @@
+{
+  "id": "mlag-domain-id-mismatch",
+  "skill": "diagnose-mlag",
+  "fault_domain": "mlag",
+  "title": "MLAG Domain-ID Mismatch \u2014 dc1-leaf2a peer negotiation fails",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "vendor": "arista",
+  "symptom": "MLAG negotiation status on dc1-leaf2a shows Inactive. Both dc1-leaf2a and dc1-leaf2b report Active state simultaneously. MLAG port-channels going inactive.",
+  "root_cause": "mlag domain-id changed to WRONG_DOMAIN on dc1-leaf2a \u2014 domain-id mismatch with dc1-leaf2b (DC1_L3_LEAF2)",
+  "fix_command": "mlag configuration\n   domain-id DC1_L3_LEAF2",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show mlag detail",
+    "show run section mlag"
+  ],
+  "difficulty": "easy",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-mlag"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-mlag": "EP"
+  }
+}

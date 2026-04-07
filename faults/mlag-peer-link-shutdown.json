@@ -1,0 +1,35 @@
+{
+  "id": "mlag-peer-link-shutdown",
+  "skill": "diagnose-mlag",
+  "fault_domain": "mlag",
+  "title": "MLAG Peer-Link Shutdown \u2014 dc1-leaf1a loses peer connectivity",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "vendor": "arista",
+  "symptom": "MLAG state on dc1-leaf1a shows peer-link status Down. dc1-leaf1b shows negotiation status Inactive. Hosts behind MLAG port-channels losing redundancy.",
+  "root_cause": "Port-Channel3 (MLAG peer-link) shutdown on dc1-leaf1a",
+  "fix_command": "interface Port-Channel3\n   no shutdown",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show mlag detail",
+    "show interfaces Port-Channel3 status",
+    "show mlag interfaces"
+  ],
+  "difficulty": "easy",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-mlag"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-mlag": "EP"
+  }
+}

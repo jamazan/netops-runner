@@ -1,0 +1,33 @@
+{
+  "id": "evpn-18-stale-incomplete-netbox",
+  "skill": "evpn-noc-triage",
+  "title": "Stale NetBox \u2014 RT Mismatch on Recently Provisioned dc1-leaf1b",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "MAC not seen on remote VTEPs from dc1-leaf1b. EVPN sessions Established. NetBox data for dc1-leaf1b may be stale after recent recabling.",
+  "root_cause": "Route-target export for VLAN 12 changed to 10012:55555 on dc1-leaf1b. NetBox still shows old VNI/VLAN mapping. Intent data is incomplete/stale.",
+  "fix_command": "router bgp 65101\nvlan 12\nno route-target both 10012:55555\nroute-target both 10012:10012",
+  "fix_device": "dc1-leaf1b",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show bgp evpn instance",
+    "show run section router bgp"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "noisy-evidence",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "mlag-local-interface-down",
+  "skill": "diagnose-mlag",
+  "fault_domain": "mlag",
+  "title": "MLAG Local Interface Down \u2014 dc1-leaf2b Vlan4094 admin-shutdown",
+  "device": "dc1-leaf2b",
+  "mgmt_ip": "100.68.0.16",
+  "vendor": "arista",
+  "symptom": "MLAG on dc1-leaf2b shows local-int status Down. MLAG state goes to Inactive. dc1-leaf2a takes over as sole active node but MLAG port-channels go inactive on dc1-leaf2b.",
+  "root_cause": "interface Vlan4094 (MLAG local-interface) shutdown on dc1-leaf2b",
+  "fix_command": "interface Vlan4094\n   no shutdown",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show interfaces Vlan4094 status",
+    "show mlag detail",
+    "show run interface Vlan4094"
+  ],
+  "difficulty": "medium",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "diagnose-mlag"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "diagnose-mlag": "EP"
+  }
+}

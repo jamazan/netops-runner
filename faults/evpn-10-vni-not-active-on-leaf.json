@@ -1,0 +1,33 @@
+{
+  "id": "evpn-10-vni-not-active-on-leaf",
+  "skill": "evpn-noc-triage",
+  "title": "VNI Not Active \u2014 VNI 10022 removed from dc1-leaf1b",
+  "device": "dc1-leaf1b",
+  "mgmt_ip": "100.68.0.14",
+  "symptom": "All VLAN 22 hosts unreachable from remote leaves. VNI 10022 inactive on dc1-leaf1b. EVPN BGP sessions all Established.",
+  "root_cause": "vxlan vlan 22 vni 10022 removed from Vxlan1 on dc1-leaf1b. VNI is unconfigured/inactive while EVPN control plane remains healthy.",
+  "fix_command": "interface Vxlan1\nvxlan vlan 22 vni 10022",
+  "fix_device": "dc1-leaf1b",
+  "optimal_tool_sequence": [
+    "show vxlan vni",
+    "show vxlan vtep",
+    "show bgp evpn summary",
+    "show interfaces Vxlan1"
+  ],
+  "difficulty": "easy",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-vni-and-vtep",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

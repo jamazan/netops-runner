@@ -1,0 +1,33 @@
+{
+  "id": "evpn-08-missing-type5-route",
+  "skill": "evpn-noc-triage",
+  "title": "Missing Type-5 Route \u2014 VRF11 redistribute removed on dc1-leaf1a",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "VRF VRF11 inter-subnet routing failing on dc1-leaf1a. No Type-5 routes originated. L2 within VRF11 works normally.",
+  "root_cause": "redistribute connected removed from VRF VRF11 BGP config on dc1-leaf1a. Type-5 IP prefix routes are no longer originated.",
+  "fix_command": "router bgp 65101\nvrf VRF11\nredistribute connected route-map RM-CONN-2-BGP-VRFS",
+  "fix_device": "dc1-leaf1a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type ip-prefix",
+    "show run section router bgp",
+    "show vrf VRF11"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

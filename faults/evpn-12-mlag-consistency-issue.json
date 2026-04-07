@@ -1,0 +1,34 @@
+{
+  "id": "evpn-12-mlag-consistency-issue",
+  "skill": "evpn-noc-triage",
+  "title": "MLAG Consistency Mismatch \u2014 DC1_L3_LEAF2 Port-Channel5",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "DC1_L3_LEAF2 MLAG config-sanity reports mismatches. Dual-homed hosts seeing asymmetric forwarding. Peer-link is up.",
+  "root_cause": "VLAN 21 removed from Port-Channel5 allowed list on dc1-leaf2b only, creating a port-channel consistency mismatch between MLAG peers.",
+  "fix_command": "interface Port-Channel5\nswitchport trunk allowed vlan add 21",
+  "fix_device": "dc1-leaf2b",
+  "optimal_tool_sequence": [
+    "show mlag",
+    "show mlag config-sanity",
+    "show mlag interfaces",
+    "show port-channel summary",
+    "show interfaces Port-Channel5 trunk"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "mlag",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-mlag",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-endpoint"
+  ]
+}

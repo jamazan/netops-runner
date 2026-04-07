@@ -1,0 +1,34 @@
+{
+  "id": "evpn-15-arp-nd-resolution-failure",
+  "skill": "evpn-noc-triage",
+  "title": "ARP Resolution Failure \u2014 Host Silent on dc1-leaf2b",
+  "device": "dc1-leaf2b",
+  "mgmt_ip": "100.68.0.16",
+  "symptom": "Host in VRF VRF11 unreachable. ARP shows incomplete on dc1-leaf2b. Access port Ethernet8 connected. No fabric faults.",
+  "root_cause": "Ethernet8 on dc1-leaf2b (host-facing access port) is shutdown. Host appears connected (NIC up) but no ingress traffic. ARP is incomplete because the OS is not responding.",
+  "fix_command": "interface Ethernet8\nno shutdown",
+  "fix_device": "dc1-leaf2b",
+  "optimal_tool_sequence": [
+    "show arp vrf VRF11",
+    "show mac address-table vlan 21",
+    "show interfaces Ethernet8",
+    "show interfaces Ethernet8 counters",
+    "show ip arp 10.22.10.50"
+  ],
+  "difficulty": "easy",
+  "fault_domain": "endpoint",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-endpoint",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag"
+  ]
+}

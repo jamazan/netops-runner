@@ -1,0 +1,33 @@
+{
+  "id": "evpn-01-underlay-neighbor-down",
+  "skill": "evpn-noc-triage",
+  "title": "Underlay BGP Neighbor Down \u2014 dc1-spine1 \u2194 dc1-leaf1a",
+  "device": "dc1-spine1",
+  "mgmt_ip": "100.68.0.11",
+  "symptom": "BGP neighbor 10.255.255.1 (dc1-leaf1a) on dc1-spine1 is down. Session in Active state 4+ minutes.",
+  "root_cause": "Ethernet1 on dc1-spine1 (uplink to dc1-leaf1a) is shutdown, dropping the underlay IPv4 Unicast BGP session.",
+  "fix_command": "interface Ethernet1\nno shutdown",
+  "fix_device": "dc1-spine1",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show bgp neighbors 10.255.255.1",
+    "show interfaces Ethernet1",
+    "show ip route 10.255.0.3"
+  ],
+  "difficulty": "easy",
+  "fault_domain": "underlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

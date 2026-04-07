@@ -1,0 +1,34 @@
+{
+  "id": "evpn-19-multi-symptom-one-root-cause",
+  "skill": "evpn-noc-triage",
+  "title": "Multi-Symptom Cascade \u2014 dc1-leaf2a Ethernet1 Maintenance",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "Fabric-wide: dc1-spine1 BGP neighbor down, dc1-leaf2a EVPN routes withdrawn, VTEP tunnel down, VLAN 11 hosts unreachable. Change ticket NOC-CR-982 open.",
+  "root_cause": "Ethernet1 on dc1-leaf2a shutdown as part of planned maintenance (NOC-CR-982). Single interface shutdown cascades into 5 simultaneous alerts.",
+  "fix_command": "interface Ethernet1\nno shutdown",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show interfaces Ethernet1",
+    "show bgp evpn summary",
+    "show vxlan vtep",
+    "show logging last 20"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "noisy-evidence",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

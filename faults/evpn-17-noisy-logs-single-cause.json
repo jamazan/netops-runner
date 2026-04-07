@@ -1,0 +1,34 @@
+{
+  "id": "evpn-17-noisy-logs-single-cause",
+  "skill": "evpn-noc-triage",
+  "title": "Noisy Logs \u2014 Single Cause (dc1-spine2 Ethernet3 Down)",
+  "device": "dc1-spine2",
+  "mgmt_ip": "100.68.0.12",
+  "symptom": "dc1-spine2: syslog storm 1200+ events in 10 min. BGP notifications to dc1-leaf2a repeated. One session down. Optical Rx degraded on Ethernet3.",
+  "root_cause": "Ethernet3 on dc1-spine2 (uplink to dc1-leaf2a) is shutdown. Single physical fault causing cascading BGP/syslog storm. All other sessions healthy.",
+  "fix_command": "interface Ethernet3\nno shutdown",
+  "fix_device": "dc1-spine2",
+  "optimal_tool_sequence": [
+    "show bgp summary",
+    "show interfaces Ethernet3",
+    "show logging last 50",
+    "show bgp neighbors 10.255.255.10",
+    "show ip route"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "noisy-evidence",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

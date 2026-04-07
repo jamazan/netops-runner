@@ -1,0 +1,33 @@
+{
+  "id": "evpn-09-route-target-mismatch",
+  "skill": "evpn-noc-triage",
+  "title": "Route-Target Mismatch \u2014 VNI 10012 on dc1-leaf2a",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "Hosts in VLAN 12 (VNI 10012) cannot communicate across leaves. dc1-leaf2a has 0 MAC entries for VNI 10012 despite Established EVPN sessions.",
+  "root_cause": "Route-target for VLAN 12 changed to 10012:88888 on dc1-leaf2a. dc1-leaf1a still exports 10012:10012 which dc1-leaf2a no longer imports.",
+  "fix_command": "router bgp 65102\nvlan 12\nno route-target both 10012:88888\nroute-target both 10012:10012",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show bgp evpn instance",
+    "show run section router bgp"
+  ],
+  "difficulty": "hard",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

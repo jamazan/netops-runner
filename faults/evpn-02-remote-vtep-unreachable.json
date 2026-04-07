@@ -1,0 +1,34 @@
+{
+  "id": "evpn-02-remote-vtep-unreachable",
+  "skill": "evpn-noc-triage",
+  "title": "Remote VTEP Unreachable \u2014 dc1-leaf2a/2b VTEP 10.255.1.5",
+  "device": "dc1-leaf2a",
+  "mgmt_ip": "100.68.0.15",
+  "symptom": "VTEP 10.255.1.5 unreachable from dc1-leaf1a. VXLAN tunnels to leaf2 pair are down. 0 EVPN prefixes from AS 65102.",
+  "root_cause": "Both uplinks on dc1-leaf2a (Et1 to spine1, Et2 to spine2) are shutdown, making VTEP 10.255.1.5 unreachable.",
+  "fix_command": "interface Ethernet1\nno shutdown\ninterface Ethernet2\nno shutdown",
+  "fix_device": "dc1-leaf2a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show vxlan vtep",
+    "show ip route 10.255.1.5",
+    "show interfaces Ethernet1",
+    "show interfaces Ethernet2"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "underlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "diagnose-underlay",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

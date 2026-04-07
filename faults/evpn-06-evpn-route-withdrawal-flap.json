@@ -1,0 +1,33 @@
+{
+  "id": "evpn-06-evpn-route-withdrawal-flap",
+  "skill": "evpn-noc-triage",
+  "title": "EVPN Route Withdrawal Flap \u2014 VNI 10011 on dc1-leaf1a",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "symptom": "VNI 10011 Type-2 routes from dc1-leaf1a are being withdrawn and re-advertised repeatedly. EVPN session remains Established.",
+  "root_cause": "VNI 10011 (vxlan vlan 11 vni 10011) removed from Vxlan1 on dc1-leaf1a, causing Type-2 route withdrawal for VLAN 11.",
+  "fix_command": "interface Vxlan1\nvxlan vlan 11 vni 10011",
+  "fix_device": "dc1-leaf1a",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show vxlan vni",
+    "show vxlan vtep"
+  ],
+  "difficulty": "medium",
+  "fault_domain": "overlay-evpn",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "evpn.check-control-plane",
+    "correlate-with-change",
+    "produce-rca"
+  ],
+  "must_not_invoke": [
+    "diagnose-underlay",
+    "evpn.check-vni-and-vtep",
+    "diagnose-mlag",
+    "diagnose-endpoint"
+  ]
+}

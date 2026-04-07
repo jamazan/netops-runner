@@ -13,5 +13,22 @@
     "show vxlan address-table",
     "show run section router bgp"
   ],
-  "difficulty": "hard"
+  "difficulty": "hard",
+  "fault_domain": "evpn_overlay",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "evpn.check-control-plane"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "evpn.check-control-plane": "EP"
+  }
 }

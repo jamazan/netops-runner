@@ -19,3 +19,15 @@ ssh/
 # Env files
 .env
 *.env
+
+# Backup files
+frontend/index.html.bak*
+frontend/index.html.pre-*
+backend/server.js.bak
+backend/server.js.pre-*
+backend/server.js.evpn_*
+
+
+# Stale script artifacts (superseded by EVPN_NOC_FAULTS embedded in server.js)
+faults/evpn-noc-*.sh
+faults/evpn-noc-*.json

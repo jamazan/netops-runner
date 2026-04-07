@@ -1,0 +1,40 @@
+{
+  "id": "noisy-false-positive-endpoint",
+  "skill": "diagnose-endpoint",
+  "fault_domain": "noisy",
+  "title": "[Noisy] Host unreachable \u2014 fabric healthy, endpoint ARP failure",
+  "device": "dc1-leaf1a",
+  "mgmt_ip": "100.68.0.13",
+  "vendor": "arista",
+  "symptom": "Host 192.168.11.2 behind dc1-leaf1a is unreachable from dc1-leaf2a. BGP EVPN sessions all show Established. VXLAN VNI table shows VNI 10011 active on all VTEPs. EVPN Type-2 and Type-3 routes appear present. Connectivity test fails.",
+  "root_cause": "redistribute learned removed from router bgp 65101 vlan 11 on dc1-leaf1a \u2014 local MAC for 192.168.11.2 not advertised as EVPN Type-2 route. Fabric infrastructure appears healthy in summary views but MAC is missing from remote leaf tables.",
+  "fix_command": "router bgp 65101\nvlan 11\nredistribute learned",
+  "optimal_tool_sequence": [
+    "show bgp evpn summary",
+    "show bgp evpn route-type mac-ip",
+    "show vxlan address-table",
+    "show bgp evpn instance"
+  ],
+  "difficulty": "hard",
+  "expected_skills": [
+    "get-intent",
+    "get-fabric-state",
+    "logs.build-evidence",
+    "correlate-with-change",
+    "produce-rca",
+    "evpn.check-control-plane",
+    "evpn.check-vni-and-vtep",
+    "diagnose-endpoint"
+  ],
+  "skill_type_map": {
+    "get-intent": "CU",
+    "get-fabric-state": "CU",
+    "logs.build-evidence": "CU",
+    "correlate-with-change": "EP",
+    "produce-rca": "CU",
+    "evpn.check-control-plane": "EP",
+    "evpn.check-vni-and-vtep": "EP",
+    "diagnose-endpoint": "EP"
+  },
+  "eval_notes": "Agent must NOT conclude the fabric is healthy just because BGP sessions are up and VNI table looks correct. Must drill into MAC/IP table and EVPN instance to find the missing redistribute learned. Tests whether agent avoids false-positive 'all clear' on summary views."
+}
