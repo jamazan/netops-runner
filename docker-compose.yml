@@ -18,6 +18,9 @@ services:
     restart: unless-stopped
     ports:
       - '8080:80'
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend/eval-framework.js:/usr/share/nginx/html/eval-framework.js:ro
     depends_on:
       - backend
     networks:
