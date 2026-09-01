@@ -14,7 +14,12 @@ const __dirname  = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH    = process.env.DB_PATH    || path.join(__dirname, '../data/netops.db');
 const PORT       = parseInt(process.env.PORT || '3001');
 const BCRYPT_ROUNDS   = 12;
-const SESSION_SECRET  = process.env.SESSION_SECRET || 'netops-runner-secret-change-me';
+const SESSION_SECRET  = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  console.error('[boot] FATAL: SESSION_SECRET is not set. Refusing to start with a guessable default.');
+  console.error('[boot] Generate one with: openssl rand -hex 32');
+  process.exit(1);
+}
 const IDLE_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 const CLAB_HOST      = process.env.CLAB_HOST      || '10.0.0.71';
@@ -71,10 +76,10 @@ try { db.exec("UPDATE users SET role='user' WHERE role='student' OR role='teache
 
 const firstAdmin = db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").get();
 if (!firstAdmin) {
-  const adminPw = process.env.ADMIN_PASSWORD || 'changeme';
+  const adminPw = process.env.ADMIN_PASSWORD || nanoid(20);
   db.prepare("INSERT INTO users (id,username,pw_hash,role,created_at,must_change_password) VALUES (?,?,?,?,?,?)")
-    .run(nanoid(), 'admin', bcrypt.hashSync(adminPw, BCRYPT_ROUNDS), 'admin', Date.now(), 0);
-  console.log(`\n[boot] Default admin created — username: admin  password: ${adminPw}\n`);
+    .run(nanoid(), 'admin', bcrypt.hashSync(adminPw, BCRYPT_ROUNDS), 'admin', Date.now(), 1);
+  console.log(`\n[boot] FIRST BOOT — admin account created. username: admin  password: ${adminPw}\n[boot] You will be required to change this password on first login.\n`);
 }
 
 const app = express();

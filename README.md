@@ -6,7 +6,7 @@ An LLM evaluation platform for network engineering skills. Injects real faults i
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  NetOps Runner  (10.0.0.43)                     │
+│  NetOps Runner  (runner-host)                   │
 │  ┌──────────────┐  ┌──────────────────────────┐ │
 │  │   Frontend   │  │       Backend            │ │
 │  │  (nginx:8080)│  │  (Node.js/Express:3001)  │ │
@@ -15,7 +15,7 @@ An LLM evaluation platform for network engineering skills. Injects real faults i
 └─────────────────────────────────────────────────┘
                           │ SSH (docker exec)
 ┌─────────────────────────────────────────────────┐
-│  ContainerLab Host  (10.0.0.71)                 │
+│  ContainerLab Host  (clab-host)                 │
 │  Lab: multi-site-fabric                         │
 │  DC1: Arista cEOS 4.34.4M                       │
 │  DC2: Juniper cRPD + WAN backbone + Campus      │
@@ -60,7 +60,7 @@ The primary evaluation mode. Each case injects a real fault into DC1 via `docker
 Click case in EVPN NOC tab
         │
         ▼
-⚡ Inject fault  ──► backend SSH → docker exec on 10.0.0.71
+⚡ Inject fault  ──► backend SSH → docker exec on clab-host
         │             clab-multi-site-fabric-dc1-<node> Cli -p 15 -c "..."
         ▼
 ▶ Run Claude  ──► backend calls Anthropic API with evpn-noc-triage skill
@@ -220,8 +220,8 @@ faults/
 ## Deployment
 
 ### Prerequisites
-- Docker + Docker Compose on the runner host (10.0.0.43)
-- ContainerLab `multi-site-fabric` topology running on clab host (10.0.0.71)
+- Docker + Docker Compose on the runner host
+- ContainerLab `multi-site-fabric` topology running on the clab host
 - SSH key at `ssh/server` (mounted read-only into the backend container)
 - Anthropic API key
 
@@ -263,14 +263,14 @@ Use the printed bootstrap token at `http://<runner-host>:8080` to create your ad
 | `ANTHROPIC_API_KEY` | Anthropic API key for LLM runs |
 | `PORT` | Backend port (default: 3001) |
 | `DB_PATH` | SQLite database path |
-| `CLAB_HOST` | ContainerLab host IP (default: 10.0.0.71) |
+| `CLAB_HOST` | ContainerLab host IP (default: clab-host) |
 | `CLAB_USER` | SSH user for clab host (default: jamazan) |
 | `CLAB_KEY` | SSH private key path inside container (default: /app/ssh/server) |
 | `CLAB_LAB_NAME` | ContainerLab lab name (default: multi-site-fabric) |
 | `FAULT_DIR` | Legacy fault scripts directory on clab host |
-| `CEOS_MCP_URL` | Arista cEOS MCP server URL (default: http://10.0.0.71:8085) |
-| `CRPD_MCP_URL` | Juniper cRPD MCP server URL (default: http://10.0.0.71:8084) |
-| `SKILLS_MCP_URL` | Skills MCP server URL (default: http://10.0.0.71:8083) |
+| `CEOS_MCP_URL` | Arista cEOS MCP server URL (default: http://clab-host:8085) |
+| `CRPD_MCP_URL` | Juniper cRPD MCP server URL (default: http://clab-host:8084) |
+| `SKILLS_MCP_URL` | Skills MCP server URL (default: http://clab-host:8083) |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) |
 | `SKILLS_REPO` | Git URL of the skills repository |
 | `SKILLS_REPO_PATH` | Clone path on the clab host |
